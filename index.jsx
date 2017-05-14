@@ -55,7 +55,6 @@ function get_sched(start, end, timezone, callback) {
 
 }
 
-
 function getCookie(cname) {
   var name = cname + "=";
   var decodedCookie = decodeURIComponent(document.cookie);
@@ -70,6 +69,80 @@ function getCookie(cname) {
       }
   }
   return "";
+}
+
+class CoursesRequest extends React.Component {
+  render() {
+    return (
+      <CourseSelector value={this.props.value} />
+    )
+  }
+}
+
+class CourseSelector extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {subject: ""};
+
+    this.handleChange = this.handleChange.bind(this);
+  }
+
+  componentDidMount() {
+    console.log("HERE");
+    $('#class_list').DataTable({
+      dom: 'Bfrtip',
+      select: {
+        style: 'os'
+      },
+      buttons: [
+        {
+          text: 'Add classes',
+          action: function() {
+            this.rows({ selected: true }).every(function(rowIdx, tableLoop, rowLoop) {
+                $("#selected_classes").DataTable().row.add(this.data()).draw();
+            });
+          }
+        }
+      ]
+    });
+  }
+
+  handleChange(event) {
+    this.setState({value: event.target.value});
+
+    $('#class_list').DataTable().rows().remove(); // remove rows from last request
+    fetch('/courses/' + event.target.value).then(function(result) {
+      return result.json()
+    }).then(function(courses) {
+      $('#class_list').DataTable().rows.add(courses).draw();
+    });
+  }
+
+  render() {
+    console.log(this.props);
+    return (
+      <div>
+        <select id="course_selector" onChange={this.handleChange}>
+          { this.props.value.map(function(subject, i) {
+              return (
+                <option value={subject} key={i}>{subject}</option>
+              )
+            }.bind(this))
+          }
+        </select>
+
+        <table id="class_list" className="display class_table">
+          <thead>
+            <tr>
+              <th>Course Number</th>
+              <th>Credit Hours</th>
+              <th>Title</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    )
+  }
 }
 
 $(document).one('ready', function() {
@@ -138,36 +211,6 @@ $(document).ready(function() {
     ]
   });
 
-  $("#subject").change(function() {
-    $("#subject option:selected").each(function() {
-      var subject = $(this).text();
-      $.ajax({
-        url: '/courses/' + subject,
-        type: 'GET',
-        success: function(result) {
-          var div = document.getElementById('class_list');
-          div.innerHTML = result;
-          $('#class_list_table').DataTable({
-            dom: 'Bfrtip',
-            select: {
-              style: 'os'
-            },
-            buttons: [
-              {
-                text: 'Add classes',
-                action: function() {
-                  var rows = this.rows({ selected: true }).every(function(rowIdx, tableLoop, rowLoop) {
-                      $("#selected_classes").DataTable().row.add(this.data()).draw();
-                  });
-                }
-              }
-            ]
-          });
-        }
-      })
-    })
-  })
-
   $("#start_time").timepicker({
     minTime: "7:00am",
     maxTime: "10:00pm",
@@ -181,10 +224,12 @@ $(document).ready(function() {
     change_sched(this.id)
   });
 
-  ReactDOM.render(
-    (<div className="label-basics-example">
-      <Label>React was here.</Label>
-    </div>),
-    document.getElementById('root')
-  );
+  fetch('/subjects').then(function(result) {
+    return result.json()
+  }).then(function(result) {
+    ReactDOM.render(
+      <CourseSelector value={result}/>,
+      document.getElementById('course_list_column')
+    );
+  });
 })

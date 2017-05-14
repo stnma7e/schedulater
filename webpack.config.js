@@ -20,14 +20,6 @@ module.exports = {
         test: /\.scss$/,
         loaders: ["style-loader", "css-loader", "sass-loader"]
       },
-      {
-        test: /\.sass$/,
-        exclude: "node_modules/"
-        use: ExtractTextPlugin.extract({
-          fallbackLoader: "style-loader", // Will inject the style tag if plugin fails
-          loader: "css-loader!sass-loader",
-        }),
-      },
     ],
   },
   plugins: [
