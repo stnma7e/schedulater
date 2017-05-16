@@ -11,84 +11,151 @@ import {DataTable} from 'datatables.net';
 import {Button} from 'datatables.net-buttons-zf';
 import {Select} from 'datatables.net-select';
 require('foundation-sites');
+require("./dist/app.scss");
 
-function change_sched(button) {
-  if (typeof get_sched.sched_number == 'undefined') {
-    get_sched.sched_number = 0;
+class ScheduleCalendar extends React.Component {
+  constructor() {
+    super();
+    this.state = {schedNumber: 0, schedCount: 0, schedule: []};
+
+    this.nextSched = this.nextSched.bind(this);
+    this.lastSched = this.lastSched.bind(this);
+    this.getSched  = this.getSched.bind(this);
+    this.requestClasses  = this.requestClasses.bind(this);
   }
 
-  if (button == 'next-button' && get_sched.sched_number < get_sched.sched_count - 1) {
-    get_sched.sched_number += 1;
-  } else if (button == 'last-button' && get_sched.sched_number > 0) {
-    get_sched.sched_number -= 1;
+  componentDidMount() {
+    $("#start_time").timepicker({
+      minTime: "7:00am",
+      maxTime: "10:00pm",
+      step: 15});
+    $("#end_time").timepicker({
+      minTime: "7:00am",
+      maxTime: "10:00pm",
+      step: 15});
   }
 
-  console.log(get_sched.sched_number);
-
-  $('#calendar').fullCalendar('refetchEvents')
-}
-
-function get_sched(start, end, timezone, callback) {
-  if (typeof get_sched.sched_number == 'undefined') {
-    get_sched.sched_number = 0;
-  }
-
-  if (typeof get_sched.sched_list == 'undefined' || get_sched.refetch) {
-    get_sched.refetch = false;
-    get_sched.sched_number = 0;
-
+  getSched() {
+    console.log(this.state);
     $.ajax({
       url:'/courses',
       type: "POST",
-      data:JSON.stringify(get_sched.data),
+      data: JSON.stringify(this.state.courseRequest),
       success: function(result) {
         var courses = JSON.parse(result);
-        get_sched.sched_list = courses.schedule;
-        get_sched.sched_count = courses.sched_count;
-        console.log(courses.sched_count);
-        callback(courses.schedule[get_sched.sched_number])
-      }
+        var schedList = courses.schedule;
+        this.setState({
+          schedCount: courses.sched_count,
+          schedule:   courses.schedule
+        });
+
+        $('#calendar').fullCalendar('refetchEvents');
+      }.bind(this)
     });
-  } else {
-    callback(get_sched.sched_list[get_sched.sched_number])
+
   }
 
-}
+  requestClasses() {
+      var table = $('#selected_classes').DataTable();
+      var rows = table.data();
+      var titles = new Array();
+      for (var i=0; i< rows.length; i++) {
+        titles.push(rows[i][2]); // course title
+      }
 
-function getCookie(cname) {
-  var name = cname + "=";
-  var decodedCookie = decodeURIComponent(document.cookie);
-  var ca = decodedCookie.split(';');
-  for(var i = 0; i <ca.length; i++) {
-      var c = ca[i];
-      while (c.charAt(0) == ' ') {
-          c = c.substring(1);
+      var starter = document.getElementById('start_time');
+      var start_time = $('#start_time').timepicker('getTime').toTimeString();
+      var end_time   = $('#end_time').timepicker('getTime').toTimeString();
+      var times = {
+        column: "daytimes",
+        exceptions: [start_time+","+end_time],
+        allowed: true,
       }
-      if (c.indexOf(name) == 0) {
-          return c.substring(name.length, c.length);
-      }
+
+      console.log(titles);
+      this.setState({
+        courseRequest: {
+          courses: titles,
+          filters: [times]
+        }
+      });
+      this.getSched();
   }
-  return "";
-}
 
-class CoursesRequest extends React.Component {
+  lastSched() {
+    if (this.state.schedNumber > 0) {
+      this.setState(prevState => ({
+        schedNumber: prevState.schedNumber - 1
+      }), () => {
+        console.log(this.state.schedNumber);
+        $('#calendar').fullCalendar('refetchEvents');
+      });
+    }
+
+  }
+
+  nextSched() {
+    if (this.state.schedNumber < this.state.schedCount - 1) {
+      this.setState(prevState => ({
+        schedNumber: prevState.schedNumber + 1
+    }), () => {
+        console.log(this.state.schedNumber);
+        $('#calendar').fullCalendar('refetchEvents');
+      });
+    }
+  }
+
   render() {
     return (
-      <CourseSelector value={this.props.value} />
+      <div>
+        <div className="row">
+          <div className="small-12 large-9 columns">
+            <Calendar events={this.state.schedule[this.state.schedNumber]}/>
+          </div>
+          <div className="small-12 large-3 columns">
+            <div className='sched_button' onClick={this.lastSched}>BUTTON</div>
+            <div className='sched_button' onClick={this.nextSched}>BUTTON 2</div>
+
+            <div className="row" id="filters">
+              <div className="small-6 columns">
+                <input type="text" id="start_time" size="10" defaultValue="08:00" className="ui-timepicker-input" />
+              </div>
+              <div className="small-6 columns">
+                <input type="text" id="end_time" size="10" defaultValue="19:00"  className="ui-timepicker-input"/>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="row">
+          <div id="selected_courses_column" className="small-12 large-4 columns">
+            <SelectedCourses sendClassesFunction={this.requestClasses} />
+          </div>
+          <div id="course_list_column" className="small-12 large-8 columns">
+            <CourseSelector/>,
+          </div>
+        </div>
+      </div>
     )
   }
 }
 
 class CourseSelector extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {subject: ""};
+  constructor() {
+    super();
 
     this.handleChange = this.handleChange.bind(this);
+    this.state = {subjects: []};
+
+    fetch('/subjects').then(function(result) {
+      return result.json()
+    }).then(function(result) {
+      this.setState({subjects: result});
+    }.bind(this));
+
   }
 
   componentDidMount() {
-    console.log("HERE");
     $('#class_list').DataTable({
       dom: 'Bfrtip',
       select: {
@@ -119,15 +186,15 @@ class CourseSelector extends React.Component {
   }
 
   render() {
-    console.log(this.props);
     return (
       <div>
         <select id="course_selector" onChange={this.handleChange}>
-          { this.props.value.map(function(subject, i) {
+          {
+            this.state.subjects.map(function(subject, i) {
               return (
                 <option value={subject} key={i}>{subject}</option>
               )
-            }.bind(this))
+            })
           }
         </select>
 
@@ -145,91 +212,78 @@ class CourseSelector extends React.Component {
   }
 }
 
-$(document).one('ready', function() {
-  $('#calendar').last_width = $(window).width();
-})
-$(document).ready(function() {
-  $('#calendar').fullCalendar({
-    defaultView: 'agendaWeek',
-    minTime: "8:00:00",
-    maxTime: "22:00:00",
-    allDaySlot: false,
-    header: false,
-    defaultDate: '2000-01-07',
-    columnFormat: 'dddd',
-    timezone: "UTC",
-    firstDay: 1,
-    aspectRatio: 2.6*(this.last_width/1008),
-    windowResize: function(view) {
-      var multiplier = $(window).width() / $('#calendar').last_width;
-      $('#calendar').fullCalendar({aspectRatio: 2.6*multiplier})
-    },
-    events: get_sched
-  })
-
-
-  $("#selected_classes").DataTable({
-    dom: 'Bfrtip',
-    select: {
-      style: 'os'
-    },
-    buttons : [
-      {
-        text: 'Remove classes',
-        action: function() {
-          $('#selected_classes').DataTable().rows({ selected: true }).remove().draw();
-        }
+class SelectedCourses extends React.Component {
+  componentDidMount() {
+    $("#selected_classes").DataTable({
+      dom: 'Bfrtip',
+      select: {
+        style: 'os'
       },
-      {
-        text: 'Send classes',
-        action: function() {
-          var table = $('#selected_classes').DataTable();
-          var rows = table.data();
-          var titles = new Array();
-          for (var i=0; i< rows.length; i++) {
-            titles.push(rows[i][2]); // course title
+      buttons : [
+        {
+          text: 'Remove classes',
+          action: function() {
+            $('#selected_classes').DataTable().rows({ selected: true }).remove().draw();
           }
-
-          var start_time = $('#start_time').timepicker('getTime').toTimeString();
-          var end_time   = $('#end_time').timepicker('getTime').toTimeString();
-          var times = {
-            column: "daytimes",
-            exceptions: [start_time+","+end_time],
-            allowed: true,
-          }
-
-          console.log(titles);
-          get_sched.data = {
-            courses: titles,
-            filters: [times]
-          }
-          get_sched.refetch = true;
-          console.log(get_sched.data);
-          $('#calendar').fullCalendar('refetchEvents');
+        },
+        {
+          text: 'Send classes',
+          action: this.props.sendClassesFunction
         }
-      }
-    ]
-  });
+      ]
+    });
+  }
 
-  $("#start_time").timepicker({
-    minTime: "7:00am",
-    maxTime: "10:00pm",
-    step: 15});
-  $("#end_time").timepicker({
-    minTime: "7:00am",
-    maxTime: "10:00pm",
-    step: 15});
+  render() {
+    return (
+      <table id='selected_classes' className='display class_table'>
+        <thead>
+          <tr>
+            <th>Course Number</th>
+            <th>Credit Hours</th>
+            <th>Title</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    )
+  }
+}
 
-  $('.sched_button').click(function() {
-    change_sched(this.id)
-  });
+class Calendar extends React.Component {
+  componentDidMount() {
+    $('#calendar').last_width = $(window).width();
 
-  fetch('/subjects').then(function(result) {
-    return result.json()
-  }).then(function(result) {
-    ReactDOM.render(
-      <CourseSelector value={result}/>,
-      document.getElementById('course_list_column')
-    );
-  });
+    $('#calendar').fullCalendar({
+      defaultView: 'agendaWeek',
+      minTime: "8:00:00",
+      maxTime: "22:00:00",
+      allDaySlot: false,
+      header: false,
+      defaultDate: '2000-01-07',
+      columnFormat: 'dddd',
+      timezone: "UTC",
+      firstDay: 1,
+      aspectRatio: 2.6*(this.last_width/1008),
+      windowResize: function(view) {
+        var multiplier = $(window).width() / $('#calendar').last_width;
+        $('#calendar').fullCalendar({aspectRatio: 2.6*multiplier})
+      },
+      events: function(start, end, timezone, callback) {
+        callback(this.props.events)
+      }.bind(this)
+    })
+  }
+
+  render() {
+    return <div id='calendar'></div>
+  }
+}
+
+$(document).ready(function() {
+  ReactDOM.render(
+    <ScheduleCalendar />,
+    document.getElementById('calendar_container')
+  );
 })

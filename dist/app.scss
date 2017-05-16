@@ -1,0 +1,27 @@
+@import "~foundation-sites/scss/foundation";
+@include foundation-everything;
+
+@import "~datatables.net-select-zf/css/select.foundation.css";
+
+.sched_button {
+  background-color: #eee;
+  opacity: 0.6;
+  height: 100px;
+  width: 200px;
+  user-select: none;
+  padding: 5px;
+  margin:5px;
+  float: left;
+}
+
+.class_table {
+  user-select: none;
+  text-align: center;
+  clear: both; float: left; display: block; position: relative;
+}
+
+#header {
+  height: 100px;
+  background-color: lightblue;
+  padding-bottom: 10px;
+}
