@@ -36,7 +36,6 @@ class ScheduleCalendar extends React.Component {
   }
 
   getSched() {
-    console.log(this.state);
     $.ajax({
       url:'/courses',
       type: "POST",
@@ -48,38 +47,34 @@ class ScheduleCalendar extends React.Component {
           schedCount: courses.sched_count,
           schedule:   courses.schedule
         });
-
-        $('#calendar').fullCalendar('refetchEvents');
       }.bind(this)
     });
 
   }
 
-  requestClasses() {
-      var table = $('#selected_classes').DataTable();
-      var rows = table.data();
-      var titles = new Array();
-      for (var i=0; i< rows.length; i++) {
-        titles.push(rows[i][2]); // course title
-      }
+  requestClasses(rows) {
+    var titles = new Array();
+    for (var i=0; i< rows.length; i++) {
+      titles.push(rows[i][2]); // course title
+    }
 
-      var starter = document.getElementById('start_time');
-      var start_time = $('#start_time').timepicker('getTime').toTimeString();
-      var end_time   = $('#end_time').timepicker('getTime').toTimeString();
-      var times = {
-        column: "daytimes",
-        exceptions: [start_time+","+end_time],
-        allowed: true,
-      }
+    var starter = document.getElementById('start_time');
+    var start_time = $('#start_time').timepicker('getTime').toTimeString();
+    var end_time   = $('#end_time').timepicker('getTime').toTimeString();
+    var times = {
+      column: "daytimes",
+      exceptions: [start_time+","+end_time],
+      allowed: true,
+    }
 
-      console.log(titles);
-      this.setState({
-        courseRequest: {
-          courses: titles,
-          filters: [times]
-        }
-      });
+    this.setState({
+      courseRequest: {
+        courses: titles,
+        filters: [times]
+      }
+    }, () => {
       this.getSched();
+    });
   }
 
   lastSched() {
@@ -88,19 +83,16 @@ class ScheduleCalendar extends React.Component {
         schedNumber: prevState.schedNumber - 1
       }), () => {
         console.log(this.state.schedNumber);
-        $('#calendar').fullCalendar('refetchEvents');
       });
     }
-
   }
 
   nextSched() {
     if (this.state.schedNumber < this.state.schedCount - 1) {
       this.setState(prevState => ({
         schedNumber: prevState.schedNumber + 1
-    }), () => {
+      }), () => {
         console.log(this.state.schedNumber);
-        $('#calendar').fullCalendar('refetchEvents');
       });
     }
   }
@@ -108,31 +100,27 @@ class ScheduleCalendar extends React.Component {
   render() {
     return (
       <div>
-        <div className="row">
+        <div id="calendar_row" className="row">
           <div className="small-12 large-9 columns">
             <Calendar events={this.state.schedule[this.state.schedNumber]}/>
+            <div className='sched_button small-6 columns' onClick={this.lastSched}>BUTTON</div>
+            <div className='sched_button small-6 columns' onClick={this.nextSched}>BUTTON 2</div>
           </div>
-          <div className="small-12 large-3 columns">
-            <div className='sched_button' onClick={this.lastSched}>BUTTON</div>
-            <div className='sched_button' onClick={this.nextSched}>BUTTON 2</div>
-
-            <div className="row" id="filters">
-              <div className="small-6 columns">
-                <input type="text" id="start_time" size="10" defaultValue="08:00" className="ui-timepicker-input" />
-              </div>
-              <div className="small-6 columns">
-                <input type="text" id="end_time" size="10" defaultValue="19:00"  className="ui-timepicker-input"/>
-              </div>
+          <div id="filters" className="small-12 large-3 columns">
+            <div className="small-6 columns">
+              <input type="text" id="start_time" size="10" defaultValue="08:00" className="ui-timepicker-input" />
+            </div>
+            <div className="small-6 columns">
+              <input type="text" id="end_time" size="10" defaultValue="19:00"  className="ui-timepicker-input"/>
             </div>
           </div>
         </div>
 
+        <hr/>
+
         <div className="row">
-          <div id="selected_courses_column" className="small-12 large-4 columns">
-            <SelectedCourses sendClassesFunction={this.requestClasses} />
-          </div>
-          <div id="course_list_column" className="small-12 large-8 columns">
-            <CourseSelector/>,
+          <div className="courses_table small-12 columns">
+            <CourseSelector requestClassesFunction={this.requestClasses}/>,
           </div>
         </div>
       </div>
@@ -145,17 +133,18 @@ class CourseSelector extends React.Component {
     super();
 
     this.handleChange = this.handleChange.bind(this);
-    this.state = {subjects: []};
+    this.state = {renderedCourses: new Set(), subjects: []};
 
     fetch('/subjects').then(function(result) {
       return result.json()
     }).then(function(result) {
       this.setState({subjects: result});
     }.bind(this));
-
   }
 
   componentDidMount() {
+    var component = this;
+
     $('#class_list').DataTable({
       dom: 'Bfrtip',
       select: {
@@ -165,8 +154,39 @@ class CourseSelector extends React.Component {
         {
           text: 'Add classes',
           action: function() {
-            this.rows({ selected: true }).every(function(rowIdx, tableLoop, rowLoop) {
-                $("#selected_classes").DataTable().row.add(this.data()).draw();
+            var rows = this.rows({selected: true});
+            
+            component.setState((prevState, props) => {
+              var updatedCourses = prevState.renderedCourses;
+              rows.every(function(rowIdx, tableLoop, rowLoop) {
+                updatedCourses.add(this.data())
+              });
+
+              props.requestClassesFunction(Array.from(updatedCourses));
+
+              return {renderedCourses: updatedCourses}
+            });
+          }
+        },
+        {
+          text: 'Remove classes',
+          action: function() {
+            var rows = this.rows({selected: true});
+
+            component.setState((prevState, props) => {
+              var updatedCourses = prevState.renderedCourses;
+
+              if (rows.data().length < 1) {
+                updatedCourses.clear();
+              } else {
+                rows.every(function(rowIdx, tableLoop, rowLoop) {
+                  updatedCourses.delete(this.data())
+                });
+              }
+
+              props.requestClassesFunction(Array.from(updatedCourses));
+
+              return {renderedCourses: updatedCourses}
             });
           }
         }
@@ -212,45 +232,6 @@ class CourseSelector extends React.Component {
   }
 }
 
-class SelectedCourses extends React.Component {
-  componentDidMount() {
-    $("#selected_classes").DataTable({
-      dom: 'Bfrtip',
-      select: {
-        style: 'os'
-      },
-      buttons : [
-        {
-          text: 'Remove classes',
-          action: function() {
-            $('#selected_classes').DataTable().rows({ selected: true }).remove().draw();
-          }
-        },
-        {
-          text: 'Send classes',
-          action: this.props.sendClassesFunction
-        }
-      ]
-    });
-  }
-
-  render() {
-    return (
-      <table id='selected_classes' className='display class_table'>
-        <thead>
-          <tr>
-            <th>Course Number</th>
-            <th>Credit Hours</th>
-            <th>Title</th>
-          </tr>
-        </thead>
-        <tbody>
-        </tbody>
-      </table>
-    )
-  }
-}
-
 class Calendar extends React.Component {
   componentDidMount() {
     $('#calendar').last_width = $(window).width();
@@ -279,11 +260,15 @@ class Calendar extends React.Component {
   render() {
     return <div id='calendar'></div>
   }
+
+  componentDidUpdate(prevProps, prevState) {
+    $('#calendar').fullCalendar('refetchEvents');
+  }
 }
 
 $(document).ready(function() {
   ReactDOM.render(
-    <ScheduleCalendar />,
+    <ScheduleCalendar/>,
     document.getElementById('calendar_container')
   );
 })

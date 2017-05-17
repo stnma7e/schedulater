@@ -11,7 +11,6 @@
   user-select: none;
   padding: 5px;
   margin:5px;
-  float: left;
 }
 
 .class_table {
@@ -23,5 +22,9 @@
 #header {
   height: 100px;
   background-color: lightblue;
-  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.courses_table {
+  margin:auto;
 }
