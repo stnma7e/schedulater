@@ -16,12 +16,21 @@ require("./dist/app.scss");
 class ScheduleCalendar extends React.Component {
   constructor() {
     super();
-    this.state = {schedNumber: 0, schedCount: 0, schedule: []};
+    this.state = {
+      schedNumber: 0,
+      schedCount: 0,
+      schedule: [],
+      courseRequest: {},
+      renderedCourses: new Set(),
+      lastAddedCourses: []
+    };
 
     this.nextSched = this.nextSched.bind(this);
     this.lastSched = this.lastSched.bind(this);
-    this.getSched  = this.getSched.bind(this);
     this.requestClasses  = this.requestClasses.bind(this);
+    this.addClasses  = this.addClasses.bind(this);
+    this.removeClasses  = this.removeClasses.bind(this);
+    this.removeLastClasses  = this.removeLastClasses.bind(this);
   }
 
   componentDidMount() {
@@ -33,23 +42,6 @@ class ScheduleCalendar extends React.Component {
       minTime: "7:00am",
       maxTime: "10:00pm",
       step: 15});
-  }
-
-  getSched() {
-    $.ajax({
-      url:'/courses',
-      type: "POST",
-      data: JSON.stringify(this.state.courseRequest),
-      success: function(result) {
-        var courses = JSON.parse(result);
-        var schedList = courses.schedule;
-        this.setState({
-          schedCount: courses.sched_count,
-          schedule:   courses.schedule
-        });
-      }.bind(this)
-    });
-
   }
 
   requestClasses(rows) {
@@ -67,13 +59,69 @@ class ScheduleCalendar extends React.Component {
       allowed: true,
     }
 
-    this.setState({
-      courseRequest: {
-        courses: titles,
-        filters: [times]
+    $.ajax({
+      url:'/courses',
+      type: "POST",
+      data: JSON.stringify({ courses: titles, filters: [times] }),
+      success: function(result) {
+        var courses = JSON.parse(result);
+        console.log("schedCount: ", courses.sched_count);
+
+        if (courses.schedule.length < 1) {
+          // if there are no valid schedules possible with the classes requested
+          // then it's probably easiest to clear the last added classes
+          this.removeLastClasses();
+        }
+
+        this.setState({
+          schedCount: courses.sched_count,
+          schedule:   courses.schedule
+        });
+      }.bind(this),
+      error: function(error) {
+        this.removeLastClasses()
+      }.bind(this)
+
+    });
+  }
+
+  removeLastClasses() {
+    this.removeClasses(this.state.lastAddedCourses);
+    alert("That class(es) won't work with this schedule. If you tried to add multiple classes at once, you can try to add them one by one to see if any will work.");
+    this.setState({lastAddedCourses: []});
+  }
+
+  addClasses(rows) {
+    this.setState((prevState, props) => {
+      var updatedCourses = prevState.renderedCourses;
+      rows.every(function(rowIdx, tableLoop, rowLoop) {
+        updatedCourses.add(this.data())
+      });
+
+      return {
+        renderedCourses: updatedCourses,
+        lastAddedCourses: rows
       }
     }, () => {
-      this.getSched();
+      this.requestClasses(Array.from(this.state.renderedCourses));
+    });
+  }
+
+  removeClasses(rows) {
+    this.setState((prevState, props) => {
+      var updatedCourses = prevState.renderedCourses;
+
+      if (rows.data().length < 1) {
+        updatedCourses.clear();
+      } else {
+        rows.every(function(rowIdx, tableLoop, rowLoop) {
+          updatedCourses.delete(this.data())
+        });
+      }
+
+      return {renderedCourses: updatedCourses}
+    }, () => {
+      this.requestClasses(Array.from(this.state.renderedCourses));
     });
   }
 
@@ -120,7 +168,10 @@ class ScheduleCalendar extends React.Component {
 
         <div className="row">
           <div className="courses_table small-12 columns">
-            <CourseSelector requestClassesFunction={this.requestClasses}/>,
+            <CourseSelector requestClassesFunction={this.requestClasses}
+                            addClasses={this.addClasses}
+                            removeClasses={this.removeClasses}
+            />,
           </div>
         </div>
       </div>
@@ -154,40 +205,13 @@ class CourseSelector extends React.Component {
         {
           text: 'Add classes',
           action: function() {
-            var rows = this.rows({selected: true});
-            
-            component.setState((prevState, props) => {
-              var updatedCourses = prevState.renderedCourses;
-              rows.every(function(rowIdx, tableLoop, rowLoop) {
-                updatedCourses.add(this.data())
-              });
-
-              props.requestClassesFunction(Array.from(updatedCourses));
-
-              return {renderedCourses: updatedCourses}
-            });
+            component.props.addClasses(this.rows({selected: true}))
           }
         },
         {
           text: 'Remove classes',
           action: function() {
-            var rows = this.rows({selected: true});
-
-            component.setState((prevState, props) => {
-              var updatedCourses = prevState.renderedCourses;
-
-              if (rows.data().length < 1) {
-                updatedCourses.clear();
-              } else {
-                rows.every(function(rowIdx, tableLoop, rowLoop) {
-                  updatedCourses.delete(this.data())
-                });
-              }
-
-              props.requestClassesFunction(Array.from(updatedCourses));
-
-              return {renderedCourses: updatedCourses}
-            });
+            component.props.removeClasses(this.rows({selected: true}));
           }
         }
       ]
