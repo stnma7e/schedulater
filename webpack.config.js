@@ -7,7 +7,7 @@ const extractSass = new ExtractTextPlugin({
 var webpack = require('webpack');
 
 module.exports = {
-  entry: './index.jsx',
+  entry: './js/index.js',
   output: {
     filename: 'dist/bundle.js'
   },

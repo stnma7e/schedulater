@@ -1,4 +1,4 @@
 node_modules
-dist/bundle.js
-dist/bundle.css
+dist/bundle*
 classes.db
+

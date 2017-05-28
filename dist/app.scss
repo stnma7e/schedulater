@@ -2,15 +2,22 @@
 @include foundation-everything;
 
 @import "~datatables.net-select-zf/css/select.foundation.css";
+//@import url('https://fonts.googleapis.com/css?family=Muli|Open+Sans|Quattrocento|Quattrocento+Sans|Raleway|Roboto');
+
+$site_font: 'Muli', regular;
+
+body {
+  font-family: $site_font;
+}
+
+#calendar_container {
+  margin-left: 2%;
+  margin-right: 2%;
+}
 
 .sched_button {
-  background-color: #eee;
   opacity: 0.6;
-  height: 100px;
-  width: 200px;
   user-select: none;
-  padding: 5px;
-  margin:5px;
 }
 
 .class_table {
@@ -27,4 +34,15 @@
 
 .courses_table {
   margin:auto;
+}
+
+h5 h1 h6{
+  font-family: $site_font;
+}
+
+.filterBlock {
+  text-align: center;
+   .dropdown-pane {
+     text-align: left;
+   }
 }
