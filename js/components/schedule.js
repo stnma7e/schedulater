@@ -31,6 +31,7 @@ export default class ScheduleCalendar extends React.Component {
     this.requestClasses = this.requestClasses.bind(this);
     this.addClasses = this.addClasses.bind(this);
     this.removeClasses = this.removeClasses.bind(this);
+    this.handleCreditHours = this.handleCreditHours.bind(this);
   }
 
   componentDidMount() {
@@ -63,6 +64,10 @@ export default class ScheduleCalendar extends React.Component {
       time_filter: {
         start: start_time,
         end:   end_time
+      },
+      credit_filter: {
+        min_hours: this.props.courseFilters.creditHours.minHours,
+        max_hours: this.props.courseFilters.creditHours.maxHours
       },
       instructor_filter: this.props.instructors
     });
@@ -113,6 +118,28 @@ export default class ScheduleCalendar extends React.Component {
     }
   }
 
+  handleCreditHours(minHours, event) {
+    if (event.target.value < 1 || event.target.value > 18) {
+      return
+    }
+
+    if (minHours) {
+      if (this.props.courseFilters.creditHours.minHours > event.target.value) {
+        // minHours was decremented
+        this.props.changeCreditHours(false, true)
+      } else {
+        this.props.changeCreditHours(true, true)
+      }
+    } else {
+      if (this.props.courseFilters.creditHours.maxHours > event.target.value) {
+        // minHours was decremented
+        this.props.changeCreditHours(false, false)
+      } else {
+        this.props.changeCreditHours(true, false)
+      }
+    }
+  }
+
   render() {
     return (
       <div>
@@ -128,7 +155,7 @@ export default class ScheduleCalendar extends React.Component {
                 <ReactButton className='sched_button small-12 columns' onClick={this.nextSched}>Next Schedule</ReactButton>
               </div>
               <div className="small-2 columns">
-                <ReactButton className='sched_button small-12 columns' onClick={() => { this.requestClasses(() => {}) }}>&#x21bb;</ReactButton>
+                <ReactButton className='sched_button small-12 columns' onClick={this.requestClasses}>&#x21bb;</ReactButton>
               </div>
             </div>
 
@@ -143,11 +170,22 @@ export default class ScheduleCalendar extends React.Component {
             <Filter filterType="Time">
               <div className="small-6 columns">
                 Start
-                <input type="text" id="start_time" size="10" defaultValue="08:00" className="ui-timepicker-input" />
+                <input type="text" id="start_time" defaultValue="08:00" className="ui-timepicker-input" />
               </div>
               <div className="small-6 columns">
                 End
-                <input type="text" id="end_time" size="10" defaultValue="19:00"  className="ui-timepicker-input"/>
+                <input type="text" id="end_time" defaultValue="19:00"  className="ui-timepicker-input"/>
+              </div>
+            </Filter>
+
+            <Filter filterType="Credit Hours">
+              <div className="small-6 columns">
+                Minimum #
+                <input type="number" id="minHours" value={this.props.courseFilters.creditHours.minHours} onChange={(event) => {this.handleCreditHours(true, event)}} />
+              </div>
+              <div className="small-6 columns">
+                Maximum #
+                <input type="number" id="maxHours" value={this.props.courseFilters.creditHours.maxHours} onChange={(event) => {this.handleCreditHours(false, event)}} />
               </div>
             </Filter>
 

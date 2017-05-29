@@ -1,16 +1,17 @@
 import { connect } from 'react-redux'
 import ScheduleCalendar from '../schedule.js'
-import { fetchCourses, addCourse, removeCourse, removeAllCourses } from "../../actions";
+import { fetchCourses, addCourse, removeCourse, removeAllCourses, changeCreditHours } from "../../actions";
 
 const mapStateToProps = (state) => {
   if (  state.courseRequests.length < 1
      || typeof state.courseRequests[state.courseRequests.length-1].courses == "undefined"
   ) {
     return {
-      schedule: { "courses": { "schedule": []}},
-      schedCount: { "courses": { "sched_count": 0}},
+      schedule: { "courses": { "schedule": [] } },
+      schedCount: { "courses": { "sched_count": 0 } },
       courses: Array.from(state.currentCourses),
-      instructors: state.instructorMap
+      instructors: state.instructorMap,
+      courseFilters: state.courseFilters
     }
   }
 
@@ -18,7 +19,8 @@ const mapStateToProps = (state) => {
     schedule:   state.courseRequests[state.courseRequests.length-1],
     schedCount: state.courseRequests[state.courseRequests.length-1],
     courses: Array.from(state.currentCourses),
-    instructors: state.instructorMap
+    instructors: state.instructorMap,
+    courseFilters: state.courseFilters
   }
 }
 
@@ -40,6 +42,9 @@ const mapDispatchToProps = (dispatch) => {
           dispatch(removeCourse(this.data()[2]))
         })
       }
+    },
+    changeCreditHours: (increment, minHours) => {
+      dispatch(changeCreditHours(increment, minHours))
     }
   }
 }

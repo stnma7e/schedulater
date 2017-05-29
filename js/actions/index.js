@@ -60,6 +60,30 @@ const receiveCourses = (courses) => {
   }
 }
 
+const changeCreditHours = (increment, minHours) => {
+  if (increment) {
+    if (minHours) {
+      return {
+        type: 'INCREMENT_MIN_HOURS'
+      }
+    } else {
+      return {
+        type: 'INCREMENT_MAX_HOURS'
+      }
+    }
+  } else {
+    if (minHours) {
+      return {
+        type: 'DECREMENT_MIN_HOURS'
+      }
+    } else {
+      return {
+        type: 'DECREMENT_MAX_HOURS'
+      }
+    }
+  }
+}
+
 const fetchCourses = (coursesHaveUpdated, courseFilters) => {
   return function(dispatch) {
     dispatch(requestCourses(courseFilters));
@@ -85,6 +109,10 @@ const fetchCourses = (coursesHaveUpdated, courseFilters) => {
         dispatch(receiveCourses(json));
 
         console.info("schedCount:", json.sched_count);
+
+        if (json.sched_count < 1) {
+          alert("There weren't any schedules that could be made from the options you selected. Maybe the minimum credit hours are set too high, or some filters are too restrictive.")
+        }
 
         if (coursesHaveUpdated) {
           var instructors = [];
@@ -115,4 +143,4 @@ const fetchCourses = (coursesHaveUpdated, courseFilters) => {
   }
 }
 
-export { toggleInstructor, addInstructor, fetchCourses, addCourse, removeCourse }
+export { toggleInstructor, addInstructor, fetchCourses, addCourse, removeCourse, changeCreditHours }
