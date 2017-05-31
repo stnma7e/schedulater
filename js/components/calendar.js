@@ -13,33 +13,13 @@ export default class Calendar extends React.Component {
       header: false,
       defaultDate: '2000-01-07',
       columnFormat: 'dddd',
-      timezone: "UTC",
       firstDay: 1,
       aspectRatio: 2.6*(this.last_width/1008),
       windowResize: function(view) {
         var multiplier = $(window).width() / $('#calendar').last_width;
         $('#calendar').fullCalendar({aspectRatio: 2.6*multiplier})
       },
-      events: function(start, end, timezone, callback) {
-        var events = [];
-        if (typeof this.props.events != "undefined") {
-          console.log(colorList);
-          var last_title = "";
-          var colorIdx = 0;
-          events = this.props.events.map((event) => event);
-          // they should be in order of title from the server's output
-          for (let event of events) {
-            console.log(event)
-            if (event.title !== last_title) {
-              last_title = event.title;
-              colorIdx++;
-            }
-            event.color = colorList[colorIdx].background;
-            event.textColor = colorList[colorIdx].text;
-          };
-        }
-        callback(events)
-      }.bind(this)
+      events: transform_event_data.bind(this)
     })
   }
 
@@ -50,6 +30,82 @@ export default class Calendar extends React.Component {
   componentDidUpdate(prevProps, prevState) {
     $('#calendar').fullCalendar('refetchEvents');
   }
+}
+
+function transform_event_data(start, end, timezone, callback) {
+  if (typeof this.props.events != "undefined") {
+    let events = extract_event_data(this.props.events);
+    colorize_events(events);
+
+    callback(events)
+  } else {
+    callback([])
+  }
+}
+
+function extract_event_data(events) {
+  let newEvents = [];
+  for (let event of events) {
+    let daytimes = event.daytimes.split(" ");
+    for (let daytime of daytimes) {
+      let times = daytime.split("|");
+      let startEnd = times[0].split(",");
+
+      var startTime = startEnd[0].split(':');
+      var endTime = startEnd[1].split(':');
+      var startHours = startTime[0];
+      var startMins  = startTime[1];
+      var endHours   = endTime[0];
+      var endMins    = endTime[1];
+
+      for (var i = 0; i < times[1].length; i++) {
+        let day = null;
+        switch (times[1][i]) {
+          // mapping the day of the week to the day of the first week of
+          // Jan, 2000 (which is how the calendar is set up)
+          case "M": day = "3"; break
+          case "T": day = "4"; break
+          case "W": day = "5"; break
+          case "R": day = "6"; break
+          case "F": day = "7"; break
+          case "S": day = "8"; break
+          case "U": day = "9"; break
+        };
+
+        let startDate = new Date('Jan ' + day + ', 2000')
+        let endDate   = new Date('Jan ' + day + ', 2000')
+        startDate.setHours(parseInt(startHours));
+        startDate.setMinutes(parseInt(startMins));
+        endDate.setHours(parseInt(endHours));
+        endDate.setMinutes(parseInt(endMins));
+
+        newEvents.push({
+          'id':    event.crn,
+          'title': event.title,
+          'start': startDate,
+          'end':   endDate
+        })
+      }
+    }
+  }
+
+  return newEvents;
+}
+
+function colorize_events(events) {
+  var last_title = "";
+  var colorIdx = 0;
+  // they should be in order of title from the server's output
+  for (let event of events) {
+    if (event.title !== last_title) {
+      last_title = event.title;
+      colorIdx++;
+    }
+    event.color = colorList[colorIdx].background;
+    event.textColor = colorList[colorIdx].text;
+  };
+
+  return events
 }
 
 const colorList = function() {

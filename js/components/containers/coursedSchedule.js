@@ -1,6 +1,7 @@
-import { connect } from 'react-redux'
 import ScheduleCalendar from '../schedule.js'
-import { fetchCourses, addCourse, removeCourse, removeAllCourses, changeCreditHours } from "../../actions";
+import { connect } from 'react-redux'
+import { addCourse, removeCourse, removeAllCourses, changeCreditHours } from "../../actions";
+import fetchCourses from '../../actions/fetchCourses.js'
 
 const mapStateToProps = (state) => {
   if (  state.courseRequests.length < 1
