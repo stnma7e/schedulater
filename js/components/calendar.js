@@ -11,6 +11,7 @@ export default class Calendar extends React.Component {
       maxTime: "22:00:00",
       allDaySlot: false,
       header: false,
+      weekends: false,
       defaultDate: '2000-01-07',
       columnFormat: 'dddd',
       firstDay: 1,
@@ -35,16 +36,27 @@ export default class Calendar extends React.Component {
 function transform_event_data(start, end, timezone, callback) {
   if (typeof this.props.events != "undefined") {
     let events = extract_event_data(this.props.events);
-    colorize_events(events);
 
-    callback(events)
+    if (events.needsWeekend) {
+      console.log('HERE')
+      $('#calendar').fullCalendar('option', 'weekends', true)
+    } else {
+      $('#calendar').fullCalendar('option', 'weekends', false)
+    }
+    colorize_events(events.events);
+
+    callback(events.events)
   } else {
     callback([])
   }
 }
 
 function extract_event_data(events) {
-  let newEvents = [];
+  let newEvents = {
+    events: [],
+    needsWeekend: false,
+  }
+
   for (let event of events) {
     let daytimes = event.daytimes.split(" ");
     for (let daytime of daytimes) {
@@ -68,8 +80,14 @@ function extract_event_data(events) {
           case "W": day = "5"; break
           case "R": day = "6"; break
           case "F": day = "7"; break
-          case "S": day = "8"; break
-          case "U": day = "9"; break
+          case "S":
+            day = "8";
+            newEvents.needsWeekend = true;
+            break
+          case "U":
+            day = "9";
+            newEvents.needsWeekend = true;
+            break
         };
 
         let startDate = new Date('Jan ' + day + ', 2000')
@@ -79,7 +97,7 @@ function extract_event_data(events) {
         endDate.setHours(parseInt(endHours));
         endDate.setMinutes(parseInt(endMins));
 
-        newEvents.push({
+        newEvents.events.push({
           'id':    event.crn,
           'title': event.title,
           'start': startDate,
