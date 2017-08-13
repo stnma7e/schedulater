@@ -9,7 +9,9 @@ const mapStateToProps = (state) => {
   ) {
     return {
       schedule: { "courses": { "schedule": [] } },
-      schedCount: { "courses": { "sched_count": 0 } },
+      schedCount: 0,
+      classes: [],
+      combos:  [],
       courses: Array.from(state.currentCourses),
       instructors: state.instructorMap,
       courseFilters: state.courseFilters
@@ -17,10 +19,11 @@ const mapStateToProps = (state) => {
   }
 
   return {
-    schedule:   state.courseRequests[state.courseRequests.length-1],
-    schedCount: state.courseRequests[state.courseRequests.length-1],
-    courses: Array.from(state.currentCourses),
-    instructors: state.instructorMap,
+    schedCount:    state.courseRequests[state.courseRequests.length-1].courses.sched_count,
+    classes:       state.courseRequests[state.courseRequests.length-1].courses.flat_courses,
+    combos:        state.courseRequests[state.courseRequests.length-1].courses.scheds,
+    courses:       Array.from(state.currentCourses),
+    instructors:   state.instructorMap,
     courseFilters: state.courseFilters
   }
 }

@@ -16,7 +16,7 @@
     "datatables.net-select": "^1.2.2",
     "datatables.net-select-zf": "^1.2.2",
     "datatables.net-zf": "^1.10.15",
-    "foundation-sites": "^6.3.1",
+    "foundation-sites": "^6.4.2",
     "fullcalendar": "^3.4.0",
     "jquery": "^3.2.1",
     "moment": "^2.18.1",
@@ -26,7 +26,8 @@
     "react-redux": "^5.0.5",
     "redux": "^3.6.0",
     "redux-thunk": "^2.2.0",
-    "timepicker": "^1.11.9"
+    "timepicker": "^1.11.9",
+    "webpack": "^3.5.4"
   },
   "devDependencies": {
     "babel-core": "^6.24.1",
@@ -35,10 +36,10 @@
     "babel-preset-react": "^6.24.1",
     "css-loader": "^0.28.4",
     "es2015": "0.0.0",
+    "extract-text-webpack-plugin": "^3.0.0",
     "node-sass": "^4.5.3",
     "react-dom": "^15.5.4",
     "sass-loader": "^6.0.5",
-    "style-loader": "^0.17.0",
-    "webpack": "^2.6.1"
+    "style-loader": "^0.17.0"
   }
 }

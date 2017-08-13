@@ -34,21 +34,37 @@ export default class Calendar extends React.Component {
 }
 
 function transform_event_data(start, end, timezone, callback) {
-  if (typeof this.props.events != "undefined") {
-    let events = extract_event_data(this.props.events);
+  if ( typeof this.props.classes != "undefined"
+    && typeof this.props.combo   != "undefined"
+  ) {
+    let events = applyComboToClasses(this.props.classes, this.props.combo);
+    console.log(this.props.combo)
+    console.log(events)
+    let calendar_events = extract_event_data(events);
 
-    if (events.needsWeekend) {
-      console.log('HERE')
+    if (calendar_events.needsWeekend) {
       $('#calendar').fullCalendar('option', 'weekends', true)
     } else {
       $('#calendar').fullCalendar('option', 'weekends', false)
     }
-    colorize_events(events.events);
+    colorize_events(calendar_events.events);
 
-    callback(events.events)
+    callback(calendar_events.events)
   } else {
     callback([])
   }
+}
+
+function applyComboToClasses(classes, combo) {
+  return combo.map((combo_index, course_index) => {
+    if (combo_index < 1) {
+      return null
+    } else {
+      return Object.assign(classes[course_index].classes[combo_index - 1], {
+        title: classes[course_index].title
+      })
+    }
+  }).filter((x) => x != null)
 }
 
 function extract_event_data(events) {
@@ -80,12 +96,10 @@ function extract_event_data(events) {
           case "W": day = "5"; break
           case "R": day = "6"; break
           case "F": day = "7"; break
-          case "S":
-            day = "8";
+          case "S": day = "8";
             newEvents.needsWeekend = true;
             break
-          case "U":
-            day = "9";
+          case "U": day = "9";
             newEvents.needsWeekend = true;
             break
         };

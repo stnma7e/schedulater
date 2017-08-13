@@ -109,7 +109,7 @@ export default class ScheduleCalendar extends React.Component {
   }
 
   nextSched() {
-    if (this.state.schedNumber < this.props.schedCount.courses.sched_count - 1) {
+    if (this.state.schedNumber < this.props.schedCount - 1) {
       this.setState(prevState => ({
         schedNumber: prevState.schedNumber + 1
       }), () => {
@@ -143,49 +143,73 @@ export default class ScheduleCalendar extends React.Component {
   render() {
     return (
       <div>
-        <div id="calendar_row" className="row">
-          <div className="small-12 large-9 columns">
-            <Calendar className="row" events={this.props.schedule.courses.schedule[this.state.schedNumber]}/>
+        <div id="calendar_row" className="grid-x grid-padding-x">
+          <div className="cell small-12 large-9">
+            <Calendar
+              className="grid-x"
+              classes={this.props.classes}
+              combo={this.props.combos[this.state.schedNumber]}
+            />
 
-            <div className="row">
-              <div className="small-5 columns">
-                <ReactButton className='sched_button small-12 columns' onClick={this.lastSched}>Previous Schedule</ReactButton>
+            <div className="grid-x grid-padding-x">
+              <div className="cell small-5">
+                <ReactButton className='sched_button cell small-12' onClick={this.lastSched}>Previous Schedule</ReactButton>
               </div>
-              <div className="small-5 columns">
-                <ReactButton className='sched_button small-12 columns' onClick={this.nextSched}>Next Schedule</ReactButton>
+              <div className="cell small-5">
+                <ReactButton className='sched_button cell small-12' onClick={this.nextSched}>Next Schedule</ReactButton>
               </div>
-              <div className="small-2 columns">
-                <ReactButton className='sched_button small-12 columns' onClick={this.requestClasses}>&#x21bb;</ReactButton>
+              <div className="cell small-2">
+                <ReactButton className='sched_button cell small-12' onClick={this.requestClasses}>&#x21bb;</ReactButton>
               </div>
             </div>
 
           </div>
 
-          <div id="filters" className="small-12 large-3 columns">
+          <div id="filters" className="cell small-12 large-3">
             <h5>Filters:</h5>
             <hr/>
-          <div className="row small-up-3 large-up-1">
+          <div className="grid-x grid-padding-x small-up-3 large-up-1">
 
 
             <Filter filterType="Time">
-              <div className="small-6 columns">
+              <div className="cell small-6">
                 Start
-                <input type="text" id="start_time" defaultValue="08:00" className="ui-timepicker-input" />
+                <input
+                  className="ui-timepicker-input"
+                  type="text"
+                  id="start_time"
+                  defaultValue="08:00"
+                />
               </div>
-              <div className="small-6 columns">
+              <div className="cell small-6">
                 End
-                <input type="text" id="end_time" defaultValue="19:00"  className="ui-timepicker-input"/>
+                <input
+                  className="ui-timepicker-input"
+                  type="text"
+                  id="end_time"
+                  defaultValue="19:00"
+                />
               </div>
             </Filter>
 
             <Filter filterType="Credit Hours">
-              <div className="small-6 columns">
+              <div className="cell small-6">
                 Minimum #
-                <input type="number" id="minHours" value={this.props.courseFilters.creditHours.minHours} onChange={(event) => {this.handleCreditHours(true, event)}} />
+                <input
+                  type="number"
+                  id="minHours"
+                  value={this.props.courseFilters.creditHours.minHours}
+                  onChange={(event) => {this.handleCreditHours(true, event)}}
+                />
               </div>
-              <div className="small-6 columns">
+              <div className="cell small-6">
                 Maximum #
-                <input type="number" id="maxHours" value={this.props.courseFilters.creditHours.maxHours} onChange={(event) => {this.handleCreditHours(false, event)}} />
+                <input
+                  type="number"
+                  id="maxHours"
+                  value={this.props.courseFilters.creditHours.maxHours}
+                  onChange={(event) => {this.handleCreditHours(false, event)}}
+                />
               </div>
             </Filter>
 
@@ -196,9 +220,9 @@ export default class ScheduleCalendar extends React.Component {
 
         </div>
 
-        <div className="row">
-          <hr className="small-centered small-11 large-11 large-centered columns end"/>
-          <div className="courses_table small-12 large-9 columns end">
+        <div className="grid-x">
+          <hr className="cell small-centered small-11 large-11 large-centered end"/>
+          <div className="cell courses_table small-12 large-9 end">
             <CourseSelector requestClassesFunction={this.requestClasses}
                             addClasses={this.addClasses}
                             removeClasses={this.removeClasses}
