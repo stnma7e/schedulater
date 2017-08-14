@@ -60,6 +60,14 @@ const receiveCourses = (courses) => {
   }
 }
 
+const lockCourseIndex = (course, crn) => {
+  return {
+    type: 'LOCK_COURSE_INDEX',
+    course_title: course,
+    crn: crn
+  }
+}
+
 const changeCreditHours = (increment, minHours) => {
   if (increment) {
     if (minHours) {
@@ -84,4 +92,4 @@ const changeCreditHours = (increment, minHours) => {
   }
 }
 
-export { toggleInstructor, addInstructor, addCourse, removeCourse, changeCreditHours, requestCourses, receiveCourses, replaceInstructors, replaceCourses }
+export { toggleInstructor, addInstructor, addCourse, removeCourse, changeCreditHours, requestCourses, receiveCourses, replaceInstructors, replaceCourses, lockCourseIndex }

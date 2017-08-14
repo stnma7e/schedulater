@@ -20,7 +20,10 @@ export default class Calendar extends React.Component {
         var multiplier = $(window).width() / $('#calendar').last_width;
         $('#calendar').fullCalendar({aspectRatio: 2.6*multiplier})
       },
-      events: transform_event_data.bind(this)
+      events: transform_event_data.bind(this),
+      eventClick: function(calEvent, jsEvent, view) {
+        this.props.lockCourseIndex(calEvent.title, calEvent.id)
+      }.bind(this)
     })
   }
 
@@ -35,12 +38,9 @@ export default class Calendar extends React.Component {
 
 function transform_event_data(start, end, timezone, callback) {
   if ( typeof this.props.classes != "undefined"
-    && typeof this.props.combo   != "undefined"
+    && this.props.classes.length >= 1
   ) {
-    let events = applyComboToClasses(this.props.classes, this.props.combo);
-    console.log(this.props.combo)
-    console.log(events)
-    let calendar_events = extract_event_data(events);
+    let calendar_events = extract_event_data(this.props.classes);
 
     if (calendar_events.needsWeekend) {
       $('#calendar').fullCalendar('option', 'weekends', true)
@@ -53,18 +53,6 @@ function transform_event_data(start, end, timezone, callback) {
   } else {
     callback([])
   }
-}
-
-function applyComboToClasses(classes, combo) {
-  return combo.map((combo_index, course_index) => {
-    if (combo_index < 1) {
-      return null
-    } else {
-      return Object.assign(classes[course_index].classes[combo_index - 1], {
-        title: classes[course_index].title
-      })
-    }
-  }).filter((x) => x != null)
 }
 
 function extract_event_data(events) {

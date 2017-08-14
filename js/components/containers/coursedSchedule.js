@@ -1,30 +1,29 @@
 import ScheduleCalendar from '../schedule.js'
 import { connect } from 'react-redux'
-import { addCourse, removeCourse, removeAllCourses, changeCreditHours } from "../../actions";
+import { addCourse, removeCourse, removeAllCourses, changeCreditHours, lockCourseIndex } from "../../actions";
 import fetchCourses from '../../actions/fetchCourses.js'
 
 const mapStateToProps = (state) => {
-  if (  state.courseRequests.length < 1
-     || typeof state.courseRequests[state.courseRequests.length-1].courses == "undefined"
-  ) {
+  if (typeof state.courseSchedules == "undefined") {
     return {
-      schedule: { "courses": { "schedule": [] } },
       schedCount: 0,
       classes: [],
       combos:  [],
-      courses: Array.from(state.currentCourses),
-      instructors: state.instructorMap,
-      courseFilters: state.courseFilters
+      lockedIn: [],
+      selectedCourses: Array.from(state.selectedCourses),
+      instructors:     state.instructorMap,
+      courseFilters:   state.courseFilters
     }
   }
 
   return {
-    schedCount:    state.courseRequests[state.courseRequests.length-1].courses.sched_count,
-    classes:       state.courseRequests[state.courseRequests.length-1].courses.flat_courses,
-    combos:        state.courseRequests[state.courseRequests.length-1].courses.scheds,
-    courses:       Array.from(state.currentCourses),
-    instructors:   state.instructorMap,
-    courseFilters: state.courseFilters
+    schedCount:      state.courseSchedules.sched_count,
+    classes:         state.courseSchedules.flat_courses,
+    combos:          state.courseSchedules.scheds,
+    lockedIn:        state.courseSchedules.lockedIn,
+    selectedCourses: Array.from(state.selectedCourses),
+    instructors:     state.instructorMap,
+    courseFilters:   state.courseFilters
   }
 }
 
@@ -49,6 +48,9 @@ const mapDispatchToProps = (dispatch) => {
     },
     changeCreditHours: (increment, minHours) => {
       dispatch(changeCreditHours(increment, minHours))
+    },
+    lockCourseIndex: (course, index) => {
+      dispatch(lockCourseIndex(course, index))
     }
   }
 }

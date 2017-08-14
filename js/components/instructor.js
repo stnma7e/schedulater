@@ -1,5 +1,5 @@
 import React from 'react';
-import Filter from './filter.js';
+import { Filter } from './filter.js';
 
 class InstructorFilter extends React.Component {
   render() {
@@ -8,14 +8,16 @@ class InstructorFilter extends React.Component {
         {
           this.props.courses.map(function(course, i) {
             return (
-              <CourseInstructorList
-                key={i}
-                courseName={course.name}
-                instructors={Array.from(course.instructors).map(function(instructorId) {
-                  return this.props.instructors[instructorId]
-                }.bind(this))}
-                handleInstructorClick={this.props.handleInstructorClick}
-              />
+              <div key={i}>
+                <CourseInstructorList
+                  courseName={course.name}
+                  instructors={Array.from(course.instructors).map(function(instructorId) {
+                    return this.props.instructors[instructorId]
+                  }.bind(this))}
+                  handleInstructorClick={this.props.handleInstructorClick}
+                />
+                <hr className="cell small-centered small-12" />
+              </div>
             )
           }.bind(this))
         }

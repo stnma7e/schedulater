@@ -12,9 +12,8 @@ import {Select} from 'datatables.net-select';
 require('../../node_modules/foundation-sites/dist/js/foundation.min.js');
 require("../../dist/app.scss");
 
-import ActiveInstructorFilter from './containers/activeInstructorFilter.js';
 import CourseSelector from './course_selector.js';
-import Filter from './filter.js';
+import Filters from './filter.js';
 import Calendar from './calendar.js';
 
 export default class ScheduleCalendar extends React.Component {
@@ -60,7 +59,7 @@ export default class ScheduleCalendar extends React.Component {
     });
 
     this.props.requestCourses(this.state.coursesHaveUpdated, {
-      courses: this.props.courses,
+      courses: this.props.selectedCourses,
       time_filter: {
         start: start_time,
         end:   end_time
@@ -141,17 +140,25 @@ export default class ScheduleCalendar extends React.Component {
   }
 
   render() {
+    let apppliedCombos = [];
+    if ( typeof this.props.classes != "undefined"
+      && typeof this.props.combos  != "undefined"
+      && this.props.combos.length > this.state.schedNumber
+    ) {
+      apppliedCombos = applyComboToClasses(this.props.classes, this.props.combos[this.state.schedNumber])
+      console.log(this.props.combos[this.state.schedNumber])
+    }
     return (
       <div>
         <div id="calendar_row" className="grid-x grid-padding-x">
-          <div className="cell small-12 large-9">
+          <div className="cell small-12 large-9 small-order-1 larger-order-1">
             <Calendar
               className="grid-x"
-              classes={this.props.classes}
-              combo={this.props.combos[this.state.schedNumber]}
+              classes={apppliedCombos}
+              lockCourseIndex={this.props.lockCourseIndex}
             />
 
-            <div className="grid-x grid-padding-x">
+            <div className="grid-x grid-padding-x small-order-2 larger-order-2">
               <div className="cell small-5">
                 <ReactButton className='sched_button cell small-12' onClick={this.lastSched}>Previous Schedule</ReactButton>
               </div>
@@ -163,73 +170,54 @@ export default class ScheduleCalendar extends React.Component {
               </div>
             </div>
 
+            <div className="cell grid-x grid-padding-x small-up-3 large-up-6">
+              {this.props.classes.map((c, i) => {
+                return (
+                  <div key={i} className="cell">
+                    {c.title}, {function() {
+                        if (this.props.lockedIn[i] > 0) {
+                          return apppliedCombos[this.props.lockedIn[i] - 1].crn
+                        } else {
+                          return 0
+                        }
+                      }.bind(this)()
+                    }
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="grid-x grid-margin-x small-order-4">
+              <hr className="cell small-centered small-12"/>
+              <div className="cell courses_table small-12">
+                <CourseSelector requestClassesFunction={this.requestClasses}
+                                addClasses={this.addClasses}
+                                removeClasses={this.removeClasses}
+                />,
+              </div>
+            </div>
           </div>
 
-          <div id="filters" className="cell small-12 large-3">
-            <h5>Filters:</h5>
-            <hr/>
-          <div className="grid-x grid-padding-x small-up-3 large-up-1">
-
-
-            <Filter filterType="Time">
-              <div className="cell small-6">
-                Start
-                <input
-                  className="ui-timepicker-input"
-                  type="text"
-                  id="start_time"
-                  defaultValue="08:00"
-                />
-              </div>
-              <div className="cell small-6">
-                End
-                <input
-                  className="ui-timepicker-input"
-                  type="text"
-                  id="end_time"
-                  defaultValue="19:00"
-                />
-              </div>
-            </Filter>
-
-            <Filter filterType="Credit Hours">
-              <div className="cell small-6">
-                Minimum #
-                <input
-                  type="number"
-                  id="minHours"
-                  value={this.props.courseFilters.creditHours.minHours}
-                  onChange={(event) => {this.handleCreditHours(true, event)}}
-                />
-              </div>
-              <div className="cell small-6">
-                Maximum #
-                <input
-                  type="number"
-                  id="maxHours"
-                  value={this.props.courseFilters.creditHours.maxHours}
-                  onChange={(event) => {this.handleCreditHours(false, event)}}
-                />
-              </div>
-            </Filter>
-
-            <ActiveInstructorFilter />
-
-          </div>
-          </div>
-
-        </div>
-
-        <div className="grid-x">
-          <hr className="cell small-centered small-11 large-11 large-centered end"/>
-          <div className="cell courses_table small-12 large-9 end">
-            <CourseSelector requestClassesFunction={this.requestClasses}
-                            addClasses={this.addClasses}
-                            removeClasses={this.removeClasses}
-            />,
-          </div>
+          <Filters
+            className="cell small-12 small-order-3 large-3 large-order-3"
+            handleCreditHours={this.handleCreditHours}
+            minHours={this.props.courseFilters.creditHours.minHours}
+            maxHours={this.props.courseFilters.creditHours.maxHours}
+          />
         </div>
       </div>
     )
   }
+}
+
+function applyComboToClasses(classes, combo) {
+  return combo.map((combo_index, course_index) => {
+    if (combo_index < 1) {
+      return null
+    } else {
+      return Object.assign(classes[course_index].classes[combo_index - 1], {
+        title: classes[course_index].title
+      })
+    }
+  }).filter((x) => x != null)
 }
