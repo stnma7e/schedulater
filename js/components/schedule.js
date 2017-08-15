@@ -104,6 +104,12 @@ export default class ScheduleCalendar extends React.Component {
       }), () => {
         console.info(this.state.schedNumber);
       });
+    } else {
+      this.setState(prevState => ({
+        schedNumber: this.props.schedCount - 1
+      }), () => {
+        console.info(this.state.schedNumber);
+      });
     }
   }
 
@@ -111,6 +117,12 @@ export default class ScheduleCalendar extends React.Component {
     if (this.state.schedNumber < this.props.schedCount - 1) {
       this.setState(prevState => ({
         schedNumber: prevState.schedNumber + 1
+      }), () => {
+        console.info(this.state.schedNumber);
+      });
+    } else {
+      this.setState(prevState => ({
+        schedNumber: 0
       }), () => {
         console.info(this.state.schedNumber);
       });
@@ -139,6 +151,14 @@ export default class ScheduleCalendar extends React.Component {
     }
   }
 
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.combos.length > 0) {
+      this.setState({
+          schedNumber: nextProps.combos.length - 1
+      })
+    }
+  }
+
   render() {
     let apppliedCombos = [];
     if ( typeof this.props.classes != "undefined"
@@ -148,8 +168,9 @@ export default class ScheduleCalendar extends React.Component {
       apppliedCombos = applyComboToClasses(this.props.classes, this.props.combos[this.state.schedNumber])
       console.log(this.props.combos[this.state.schedNumber])
     }
+
     return (
-      <div>
+      <div className="grid-container">
         <div id="calendar_row" className="grid-x grid-padding-x">
           <div className="cell small-12 large-9 small-order-1 larger-order-1">
             <Calendar
@@ -176,9 +197,9 @@ export default class ScheduleCalendar extends React.Component {
                   <div key={i} className="cell">
                     {c.title}, {function() {
                         if (this.props.lockedIn[i] > 0) {
-                          return apppliedCombos[this.props.lockedIn[i] - 1].crn
+                          return this.props.classes[i].classes[this.props.lockedIn[i] - 1].crn
                         } else {
-                          return 0
+                          return "None locked in"
                         }
                       }.bind(this)()
                     }
@@ -210,7 +231,7 @@ export default class ScheduleCalendar extends React.Component {
   }
 }
 
-function applyComboToClasses(classes, combo) {
+export function applyComboToClasses(classes, combo) {
   return combo.map((combo_index, course_index) => {
     if (combo_index < 1) {
       return null
