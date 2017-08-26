@@ -1,6 +1,6 @@
 import { connect } from 'react-redux'
 import { toggleInstructor } from '../../actions'
-import { InstructorFilter } from '../instructor.js'
+import { InstructorFilter } from '../instructorFilter.js'
 
 const mapStateToProps = (state) => {
   return {

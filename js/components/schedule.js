@@ -15,6 +15,7 @@ require("../../dist/app.scss");
 import CourseSelector from './course_selector.js';
 import Filters from './filter.js';
 import Calendar from './calendar.js';
+import CourseLock from './courseLock.js';
 
 export default class ScheduleCalendar extends React.Component {
   constructor(props) {
@@ -154,7 +155,7 @@ export default class ScheduleCalendar extends React.Component {
   componentWillReceiveProps(nextProps) {
     if (nextProps.combos.length > 0) {
       this.setState({
-          schedNumber: nextProps.combos.length - 1
+          schedNumber: 0
       })
     }
   }
@@ -172,40 +173,44 @@ export default class ScheduleCalendar extends React.Component {
     return (
       <div className="grid-container">
         <div id="calendar_row" className="grid-x grid-padding-x">
-          <div className="cell small-12 large-9 small-order-1 larger-order-1">
+
+            <div className="cell grid-x grid-padding-x small-up-3">
+              {this.props.classes.map((c, i) => {
+                return (
+                  <CourseLock key={i}
+                    courseIndex={i}
+                    course={c}
+                    lockedIn={this.props.lockedIn}
+                  />
+                )
+              })}
+            </div>
+
+          <div className="cell small-12 large-9 small-order-1 large-order-1">
             <Calendar
               className="grid-x"
               classes={apppliedCombos}
               lockCourseIndex={this.props.lockCourseIndex}
             />
 
-            <div className="grid-x grid-padding-x small-order-2 larger-order-2">
-              <div className="cell small-5">
+            <div className="grid-x grid-padding-x small-order-2 large-order-2">
+              <div className="cell small-3 scheduleInfo">
+                <p>
+                  <strong>Current Schedule:</strong> {this.state.schedNumber + 1}
+                </p>
+                <p>
+                  <strong>Total Available Schedules:</strong> {this.props.combos.length}
+                </p>
+              </div>
+              <div className="cell small-4">
                 <ReactButton className='sched_button cell small-12' onClick={this.lastSched}>Previous Schedule</ReactButton>
               </div>
-              <div className="cell small-5">
+              <div className="cell small-4">
                 <ReactButton className='sched_button cell small-12' onClick={this.nextSched}>Next Schedule</ReactButton>
               </div>
-              <div className="cell small-2">
+              <div className="cell small-1">
                 <ReactButton className='sched_button cell small-12' onClick={this.requestClasses}>&#x21bb;</ReactButton>
               </div>
-            </div>
-
-            <div className="cell grid-x grid-padding-x small-up-3 large-up-6">
-              {this.props.classes.map((c, i) => {
-                return (
-                  <div key={i} className="cell">
-                    {c.title}, {function() {
-                        if (this.props.lockedIn[i] > 0) {
-                          return this.props.classes[i].classes[this.props.lockedIn[i] - 1].crn
-                        } else {
-                          return "None locked in"
-                        }
-                      }.bind(this)()
-                    }
-                  </div>
-                )
-              })}
             </div>
 
             <div className="grid-x grid-margin-x small-order-4">
@@ -236,7 +241,9 @@ export function applyComboToClasses(classes, combo) {
     if (combo_index < 1) {
       return null
     } else {
-      return Object.assign(classes[course_index].classes[combo_index - 1], {
+      // we only need the a single class from each course time, so we can just
+      // use the first one
+      return Object.assign(classes[course_index].classes[combo_index - 1][0], {
         title: classes[course_index].title
       })
     }

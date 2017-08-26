@@ -23,7 +23,10 @@ const courseSchedules = (state = {
       let course_index, class_index = 0;
       for (var i=0; i<state.flat_courses.length; i++) {
         for (var j=0; j<state.flat_courses[i].classes.length; j++) {
-          if (state.flat_courses[i].classes[j].crn == action.crn) {
+          // just use the first crn in the list because all we're worried about
+          // is the time that it occurs at, the actual CRN cane be manipulated
+          // later
+          if (state.flat_courses[i].classes[j][0].crn == action.crn) {
             course_index = i
             class_index = j + 1
           }
