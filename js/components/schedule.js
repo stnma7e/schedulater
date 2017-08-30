@@ -22,7 +22,6 @@ export default class ScheduleCalendar extends React.Component {
     super(props);
 
     this.state = {
-      schedNumber: 0,
       coursesHaveUpdated: false,
     };
 
@@ -55,7 +54,6 @@ export default class ScheduleCalendar extends React.Component {
     }
 
     this.setState({
-      schedNumber: 0,
       coursesHaveUpdated: false
     });
 
@@ -99,34 +97,22 @@ export default class ScheduleCalendar extends React.Component {
   }
 
   lastSched() {
-    if (this.state.schedNumber > 0) {
-      this.setState(prevState => ({
-        schedNumber: prevState.schedNumber - 1
-      }), () => {
-        console.info(this.state.schedNumber);
-      });
+    if (this.props.schedIndex > 0) {
+      this.props.setSchedIndex(this.props.schedIndex - 1)
+      console.info(this.props.schedIndex + 1);
     } else {
-      this.setState(prevState => ({
-        schedNumber: this.props.schedCount - 1
-      }), () => {
-        console.info(this.state.schedNumber);
-      });
+      this.props.setSchedIndex(this.props.schedCount - 1)
+      console.info(this.props.schedIndex + 1);
     }
   }
 
   nextSched() {
-    if (this.state.schedNumber < this.props.schedCount - 1) {
-      this.setState(prevState => ({
-        schedNumber: prevState.schedNumber + 1
-      }), () => {
-        console.info(this.state.schedNumber);
-      });
+    if (this.props.schedIndex < this.props.schedCount - 1) {
+      this.props.setSchedIndex(this.props.schedIndex + 1)
+      console.info(this.props.schedIndex + 1);
     } else {
-      this.setState(prevState => ({
-        schedNumber: 0
-      }), () => {
-        console.info(this.state.schedNumber);
-      });
+      this.props.setSchedIndex(0)
+      console.info(this.props.schedIndex + 1);
     }
   }
 
@@ -152,22 +138,14 @@ export default class ScheduleCalendar extends React.Component {
     }
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (nextProps.combos.length > 0) {
-      this.setState({
-          schedNumber: 0
-      })
-    }
-  }
-
   render() {
     let apppliedCombos = [];
     if ( typeof this.props.classes != "undefined"
       && typeof this.props.combos  != "undefined"
-      && this.props.combos.length > this.state.schedNumber
+      && this.props.combos.length > this.props.schedIndex
     ) {
-      apppliedCombos = applyComboToClasses(this.props.classes, this.props.combos[this.state.schedNumber])
-      console.log(this.props.combos[this.state.schedNumber])
+      apppliedCombos = applyComboToClasses(this.props.classes, this.props.combos[this.props.schedIndex])
+      console.log(this.props.combos[this.props.schedIndex])
     }
 
     return (
@@ -196,7 +174,7 @@ export default class ScheduleCalendar extends React.Component {
             <div className="grid-x grid-padding-x small-order-2 large-order-2">
               <div className="cell small-3 scheduleInfo">
                 <p>
-                  <strong>Current Schedule:</strong> {this.state.schedNumber + 1}
+                  <strong>Current Schedule:</strong> {this.props.schedIndex + 1}
                 </p>
                 <p>
                   <strong>Total Available Schedules:</strong> {this.props.combos.length}

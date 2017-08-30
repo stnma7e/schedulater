@@ -6,16 +6,27 @@ const courseSchedules = (state = {
   scheds: {
     currentValidScheds: [],
     allValidScheds:     [],
+    schedIndex: 0
   },
   instructors: [],
   lockedIn: []
 }, action) => {
   switch (action.type) {
+    case 'SET_SCHED_INDEX':
+      console.log(action)
+      return Object.assign({}, state, {
+        scheds: {
+          currentValidScheds: state.scheds.currentValidScheds,
+          allValidScheds: state.scheds.allValidScheds,
+          schedIndex: action.newIndex
+        }
+      })
     case 'RECEIVE_COURSES':
       return Object.assign({}, action.courses, {
         scheds: {
           currentValidScheds: action.courses.scheds,
-          allValidScheds:     action.courses.scheds.map((x) => { return x })
+          allValidScheds:     action.courses.scheds.map((x) => { return x }),
+          schedIndex: 0
         },
         lockedIn: Array.apply(null, Array(action.courses.flat_courses.length)).map(Number.prototype.valueOf,0)
       })
@@ -58,10 +69,14 @@ const courseSchedules = (state = {
             return true
           })
 
+      let currentSched = state.scheds.currentValidScheds[state.scheds.schedIndex];
+      let newSchedIndex = newCurrentValidScheds.findIndex((x) => x == currentSched);
+
       return Object.assign({}, state, {
         scheds: {
           allValidScheds: state.scheds.allValidScheds,
-          currentValidScheds: newCurrentValidScheds
+          currentValidScheds: newCurrentValidScheds,
+          schedIndex: newSchedIndex
         },
         lockedIn: newLockedIn
       })

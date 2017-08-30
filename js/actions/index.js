@@ -68,6 +68,13 @@ const lockCourseIndex = (course, crn) => {
   }
 }
 
+export const setSchedIndex = (newIndex) => {
+  return {
+    type: "SET_SCHED_INDEX",
+    newIndex: newIndex
+  }
+}
+
 const changeCreditHours = (increment, minHours) => {
   if (increment) {
     if (minHours) {
