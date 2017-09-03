@@ -2,6 +2,16 @@ import React from 'react';
 import fullCalendar from 'fullcalendar';
 
 export default class Calendar extends React.Component {
+  constructor(props) {
+    super(props)
+
+    this.state = {
+      class_colors: new Map()
+    }
+
+    this.transform_event_data = this.transform_event_data.bind(this)
+  }
+
   componentDidMount() {
     $('#calendar').last_width = $(window).width();
 
@@ -20,7 +30,7 @@ export default class Calendar extends React.Component {
         var multiplier = $(window).width() / $('#calendar').last_width;
         $('#calendar').fullCalendar({aspectRatio: 2.6*multiplier})
       },
-      events: transform_event_data.bind(this),
+      events: this.transform_event_data,
       eventClick: function(calEvent, jsEvent, view) {
         this.props.lockCourseIndex(calEvent.title, calEvent.id)
       }.bind(this)
@@ -34,24 +44,25 @@ export default class Calendar extends React.Component {
   componentDidUpdate(prevProps, prevState) {
     $('#calendar').fullCalendar('refetchEvents');
   }
-}
 
-function transform_event_data(start, end, timezone, callback) {
-  if ( typeof this.props.classes != "undefined"
-    && this.props.classes.length >= 1
-  ) {
-    let calendar_events = extract_event_data(this.props.classes);
+  transform_event_data(start, end, timezone, callback) {
+    if ( typeof this.props.classes != "undefined"
+      && this.props.classes.length >= 1
+    ) {
+      let calendar_events = extract_event_data(this.props.classes);
 
-    if (calendar_events.needsWeekend) {
-      $('#calendar').fullCalendar('option', 'weekends', true)
+      if (calendar_events.needsWeekend) {
+        $('#calendar').fullCalendar('option', 'weekends', true)
+      } else {
+        $('#calendar').fullCalendar('option', 'weekends', false)
+      }
+
+      colorize_events(calendar_events.events, this.state.class_colors);
+
+      callback(calendar_events.events)
     } else {
-      $('#calendar').fullCalendar('option', 'weekends', false)
+      callback([])
     }
-    colorize_events(calendar_events.events);
-
-    callback(calendar_events.events)
-  } else {
-    callback([])
   }
 }
 
@@ -112,20 +123,28 @@ function extract_event_data(events) {
   return newEvents;
 }
 
-function colorize_events(events) {
-  var last_title = "";
-  var colorIdx = 0;
-  // they should be in order of title from the server's output
+function colorize_events(events, color_map) {
   for (let event of events) {
-    if (event.title !== last_title) {
-      last_title = event.title;
-      colorIdx++;
+    // if the class already has an assigned color, use it
+    if (color_map.has(event.title)) {
+      let color = color_map.get(event.title)
+      event.color = color.background
+      event.textColor = color.text
+    } else {
+    // we need to find a color that is not in use by any other class so far
+      for (let color of colorList) {
+        if ([...color_map.values()].filter((x) => {
+            return x == color
+          }).length < 1
+        ) {
+          color_map.set(event.title, color)
+          event.color = color.background
+          event.textColor = color.text;
+          break
+        }
+      }
     }
-    event.color = colorList[colorIdx].background;
-    event.textColor = colorList[colorIdx].text;
   };
-
-  return events
 }
 
 const colorList = function() {
@@ -136,7 +155,7 @@ const colorList = function() {
     }
   };
 
-  var arr = [{}];
+  var arr = [];
   arr.push(addColor("orangered", "black"))
   arr.push(addColor("aquamarine", "black"))
   arr.push(addColor("lightskyblue", "black"))
