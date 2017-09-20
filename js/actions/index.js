@@ -75,6 +75,13 @@ export const setSchedIndex = (newIndex) => {
   }
 }
 
+export const setSelectedCourse = (courseIndex) => {
+    return {
+        type: "SET_SELECTED_COURSE",
+        newIndex: courseIndex
+    }
+}
+
 const changeCreditHours = (increment, minHours) => {
   if (increment) {
     if (minHours) {

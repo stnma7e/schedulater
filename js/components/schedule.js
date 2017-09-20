@@ -23,6 +23,7 @@ export default class ScheduleCalendar extends React.Component {
 
     this.state = {
       coursesHaveUpdated: false,
+      showClassList: false
     };
 
     this.nextSched = this.nextSched.bind(this);
@@ -31,6 +32,7 @@ export default class ScheduleCalendar extends React.Component {
     this.addClasses = this.addClasses.bind(this);
     this.removeClasses = this.removeClasses.bind(this);
     this.handleCreditHours = this.handleCreditHours.bind(this);
+    this.handleClassAddition = this.handleClassAddition.bind(this);
   }
 
   componentDidMount() {
@@ -138,9 +140,21 @@ export default class ScheduleCalendar extends React.Component {
     }
   }
 
+  handleClassAddition() {
+    this.setState((prevState) => {
+      return {
+        showClassList: !prevState.showClassList
+      }
+    })
+  }
+
   render() {
     let apppliedCombos = [];
-    if ( typeof this.props.classes != "undefined"
+    if ( typeof this.props.selectedCourse != 'undefined'
+      && this.props.classes.length > this.props.selectedCourse
+    ) {
+        apppliedCombos = this.props.classes[this.props.selectedCourse].classes.map((c) => c[0])
+    } else if ( typeof this.props.classes != "undefined"
       && typeof this.props.combos  != "undefined"
       && this.props.combos.length > this.props.schedIndex
     ) {
@@ -148,22 +162,52 @@ export default class ScheduleCalendar extends React.Component {
       console.log(this.props.combos[this.props.schedIndex])
     }
 
+    let classList = null;
+    if (this.state.showClassList) {
+      classList = (
+        <div className="grid-x grid-margin-x">
+          <hr className="cell small-centered small-12"/>
+          <div className="cell courses_table small-12">
+            <CourseSelector requestClassesFunction={this.requestClasses}
+                            addClasses={this.addClasses}
+                            removeClasses={this.removeClasses}
+            />,
+          </div>
+        </div>
+      )
+    } else {
+      classList = (<div></div>)
+    }
+
     return (
-      <div className="grid-container">
-        <div id="calendar_row" className="grid-x grid-padding-x">
+    <div className="grid-container">
 
-            <div className="cell grid-x grid-padding-x small-up-3">
-              {this.props.classes.map((c, i) => {
-                return (
-                  <CourseLock key={i}
-                    courseIndex={i}
-                    course={c}
-                    lockedIn={this.props.lockedIn}
-                  />
-                )
-              })}
+          <div className="cell grid-x grid-padding-x small-up-3 large-up-6" >
+            {this.props.classes.map((c, i) => {
+              return (
+                <CourseLock key={i}
+                  courseIndex={i}
+                  course={c}
+                  lockedIn={this.props.lockedIn}
+                  onClick={() => {
+                    this.props.setSelectedCourse(0)
+                  }}
+                />
+              )
+            })}
+            <div
+              onClick={this.handleClassAddition}
+              className="cell courseHolder"
+              id="addCourseButton"
+              style={{ "fontSize": "8em" }}
+              dangerouslySetInnerHTML={{__html: '&CirclePlus;'}}
+            >
             </div>
+          </div>
 
+          {classList}
+
+        <div id="calendar_row" className="grid-x grid-padding-x grid-padding-y">
           <div className="cell small-12 large-9 small-order-1 large-order-1">
             <Calendar
               className="grid-x"
@@ -191,15 +235,6 @@ export default class ScheduleCalendar extends React.Component {
               </div>
             </div>
 
-            <div className="grid-x grid-margin-x small-order-4">
-              <hr className="cell small-centered small-12"/>
-              <div className="cell courses_table small-12">
-                <CourseSelector requestClassesFunction={this.requestClasses}
-                                addClasses={this.addClasses}
-                                removeClasses={this.removeClasses}
-                />,
-              </div>
-            </div>
           </div>
 
           <Filters
@@ -209,7 +244,7 @@ export default class ScheduleCalendar extends React.Component {
             maxHours={this.props.courseFilters.creditHours.maxHours}
           />
         </div>
-      </div>
+    </div>
     )
   }
 }
@@ -221,7 +256,7 @@ export function applyComboToClasses(classes, combo) {
     } else {
       // we only need the a single class from each course time, so we can just
       // use the first one
-      return Object.assign(classes[course_index].classes[combo_index - 1][0], {
+      return Object.assign({}, classes[course_index].classes[combo_index - 1][0], {
         title: classes[course_index].title
       })
     }

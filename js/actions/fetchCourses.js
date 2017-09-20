@@ -10,7 +10,7 @@ const fetchCourses = (coursesHaveUpdated, courseFilters) => {
       .then(response => response.json())
       .then(json => processInput(dispatch, json, true))
 
-      /*
+    /*
       fetch('/courses', {
         method: 'POST',
         body: JSON.stringify(Object.assign({}, courseFilters, {

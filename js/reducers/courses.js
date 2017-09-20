@@ -9,9 +9,14 @@ const courseSchedules = (state = {
     schedIndex: 0
   },
   instructors: [],
-  lockedIn: []
+  lockedIn: [],
+  selectedCourse: undefined
 }, action) => {
   switch (action.type) {
+    case "SET_SELECTED_COURSE":
+        return Object.assign({}, state, {
+            selectedCourse: action.newIndex
+        })
     case 'SET_SCHED_INDEX':
       console.log(action)
       return Object.assign({}, state, {

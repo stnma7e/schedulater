@@ -18,10 +18,16 @@ body {
 .sched_button {
   opacity: 0.6;
   user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
 }
 
 .class_table {
   user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
   text-align: center;
   clear: both; float: left; display: block; position: relative;
 }
@@ -45,4 +51,23 @@ h5 h1 h6{
    .dropdown-pane {
      text-align: left;
    }
+}
+
+.courseHolder {
+  border-radius: 2px;
+  border: 2px;
+  height: 8em;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  text-align: center;
+}
+.courseHolder#addCourseButton{
+  fontSize: 8em;
+  height: auto;
+}
+.courseHolder:hover {
+  background-color: gray;
+  cursor: pointer;
 }

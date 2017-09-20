@@ -1,6 +1,6 @@
 import ScheduleCalendar from '../schedule.js'
 import { connect } from 'react-redux'
-import { addCourse, removeCourse, removeAllCourses, changeCreditHours, lockCourseIndex, setSchedIndex } from "../../actions";
+import { addCourse, removeCourse, removeAllCourses, changeCreditHours, lockCourseIndex, setSchedIndex, setSelectedCourse } from "../../actions";
 import fetchCourses from '../../actions/fetchCourses.js'
 
 const mapStateToProps = (state) => {
@@ -13,7 +13,8 @@ const mapStateToProps = (state) => {
       lockedIn: [],
       selectedCourses: Array.from(state.selectedCourses),
       instructors:     state.instructorMap,
-      courseFilters:   state.courseFilters
+      courseFilters:   state.courseFilters,
+      selectedCourse: undefined
     }
   }
 
@@ -25,7 +26,8 @@ const mapStateToProps = (state) => {
     lockedIn:        state.courseSchedules.lockedIn,
     selectedCourses: Array.from(state.selectedCourses),
     instructors:     state.instructorMap,
-    courseFilters:   state.courseFilters
+    courseFilters:   state.courseFilters,
+    selectedCourse:  state.courseSchedules.selectedCourse
   }
 }
 
@@ -56,6 +58,9 @@ const mapDispatchToProps = (dispatch) => {
     },
     setSchedIndex: (newIndex) => {
       dispatch(setSchedIndex(newIndex))
+    },
+    setSelectedCourse: (newIndex) => {
+        dispatch(setSelectedCourse(newIndex))
     }
   }
 }
