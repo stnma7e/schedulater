@@ -1,4 +1,5 @@
-import { requestCourses, receiveCourses, replaceCourses, replaceInstructors } from '.';
+import { replaceCourses, replaceInstructors } from '../reducers/instructors';
+import { receiveCourses } from '../reducers/courses';
 
 const fetchCourses = (coursesHaveUpdated, courseFilters) => {
   return function(dispatch) {

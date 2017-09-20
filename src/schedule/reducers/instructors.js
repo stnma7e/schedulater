@@ -54,3 +54,31 @@ const instructorMap = (state = { instructors: [], courses: [] }, action) => {
 }
 
 export default instructorMap
+
+export const toggleInstructor = (name) => {
+  return {
+    type: 'TOGGLE_INSTRUCTOR',
+    name
+  }
+}
+
+export const addInstructor = (name) => {
+  return {
+    type: 'ADD_INSTRUCTOR',
+    name
+  }
+}
+
+export const replaceInstructors = (instructors) => {
+  return {
+    type: 'REPLACE_INSTRUCTORS',
+    instructors
+  }
+}
+
+export const replaceCourses = (courses) => {
+  return {
+    type: 'REPLACE_COURSES',
+    courses
+  }
+}

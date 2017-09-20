@@ -9,8 +9,8 @@ import {
 import {DataTable} from 'datatables.net';
 import {Button} from 'datatables.net-buttons-zf';
 import {Select} from 'datatables.net-select';
-require('../../node_modules/foundation-sites/dist/js/foundation.min.js');
-require("../../dist/app.scss");
+require('../../../node_modules/foundation-sites/dist/js/foundation.min.js');
+require("../../../dist/app.scss");
 
 import CourseSelector from './course_selector.js';
 import Filters from './filter.js';
@@ -30,18 +30,6 @@ export default class ScheduleCalendar extends React.Component {
     this.requestClasses = this.requestClasses.bind(this);
     this.addClasses = this.addClasses.bind(this);
     this.removeClasses = this.removeClasses.bind(this);
-    this.handleCreditHours = this.handleCreditHours.bind(this);
-  }
-
-  componentDidMount() {
-    $("#start_time").timepicker({
-      minTime: "7:00am",
-      maxTime: "10:00pm",
-      step: 15});
-    $("#end_time").timepicker({
-      minTime: "7:00am",
-      maxTime: "10:00pm",
-      step: 15});
   }
 
   requestClasses() {
@@ -116,28 +104,6 @@ export default class ScheduleCalendar extends React.Component {
     }
   }
 
-  handleCreditHours(minHours, event) {
-    if (event.target.value < 1 || event.target.value > 18) {
-      return
-    }
-
-    if (minHours) {
-      if (this.props.courseFilters.creditHours.minHours > event.target.value) {
-        // minHours was decremented
-        this.props.changeCreditHours(false, true)
-      } else {
-        this.props.changeCreditHours(true, true)
-      }
-    } else {
-      if (this.props.courseFilters.creditHours.maxHours > event.target.value) {
-        // minHours was decremented
-        this.props.changeCreditHours(false, false)
-      } else {
-        this.props.changeCreditHours(true, false)
-      }
-    }
-  }
-
   render() {
     let apppliedCombos = [];
     if ( typeof this.props.classes != "undefined"
@@ -204,7 +170,10 @@ export default class ScheduleCalendar extends React.Component {
 
           <Filters
             className="cell small-12 small-order-3 large-3 large-order-3"
-            handleCreditHours={this.handleCreditHours}
+            handleCreditHours={this.props.changeCreditHours(
+                this.props.courseFilters.creditHours.maxHours,
+                this.props.courseFilters.creditHours.minHours
+            )}
             minHours={this.props.courseFilters.creditHours.minHours}
             maxHours={this.props.courseFilters.creditHours.maxHours}
           />

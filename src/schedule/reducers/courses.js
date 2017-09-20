@@ -13,7 +13,6 @@ const courseSchedules = (state = {
 }, action) => {
   switch (action.type) {
     case 'SET_SCHED_INDEX':
-      console.log(action)
       return Object.assign({}, state, {
         scheds: {
           currentValidScheds: state.scheds.currentValidScheds,
@@ -105,3 +104,45 @@ const selectedCourses = (state = new Set(), action) => {
 }
 
 export { selectedCourses, courseSchedules }
+
+export const addCourse = (name) => {
+  return {
+    type: 'ADD_COURSE',
+    name
+  }
+}
+
+export const removeCourse = (name) => {
+  return {
+    type: 'REMOVE_COURSE',
+    name
+  }
+}
+
+export const removeAllCourses = () => {
+  return {
+    type: 'REMOVE_ALL_COURSES',
+  }
+}
+
+export const receiveCourses = (courses) => {
+  return {
+    type: 'RECEIVE_COURSES',
+    courses
+  }
+}
+
+export const lockCourseIndex = (course, crn) => {
+  return {
+    type: 'LOCK_COURSE_INDEX',
+    course_title: course,
+    crn
+  }
+}
+
+export const setSchedIndex = (newIndex) => {
+  return {
+    type: "SET_SCHED_INDEX",
+    newIndex
+  }
+}

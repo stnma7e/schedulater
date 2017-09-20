@@ -1,5 +1,5 @@
 import { connect } from 'react-redux'
-import { toggleInstructor } from '../../actions'
+import { toggleInstructor } from '../../reducers/instructors'
 import { InstructorFilter } from '../instructorFilter.js'
 
 const mapStateToProps = (state) => {

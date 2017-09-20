@@ -1,3 +1,6 @@
+export const MIN_CREDIT_HOURS = 1
+export const MAX_CREDIT_HOURS = 18
+
 const creditHours = (state = {}, action) => {
   switch (action.type) {
     case 'INCREMENT_MIN_HOURS':
@@ -55,3 +58,27 @@ const courseFilters = (state = {
 }
 
 export default courseFilters
+
+export const changeCreditHours = (increment, minHours) => {
+  if (increment) {
+    if (minHours) {
+      return {
+        type: 'INCREMENT_MIN_HOURS'
+      }
+    } else {
+      return {
+        type: 'INCREMENT_MAX_HOURS'
+      }
+    }
+  } else {
+    if (minHours) {
+      return {
+        type: 'DECREMENT_MIN_HOURS'
+      }
+    } else {
+      return {
+        type: 'DECREMENT_MAX_HOURS'
+      }
+    }
+  }
+}

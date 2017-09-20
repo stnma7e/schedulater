@@ -1,8 +1,20 @@
+import $ from 'jquery';
 import React from 'react';
 
 import ActiveInstructorFilter from './containers/activeInstructorFilter.js';
 
 export class Filter extends React.Component {
+  componentDidMount() {
+    $("#start_time").timepicker({
+      minTime: "7:00am",
+      maxTime: "10:00pm",
+      step: 15});
+    $("#end_time").timepicker({
+      minTime: "7:00am",
+      maxTime: "10:00pm",
+      step: 15});
+  }
+
   render() {
     return (
       <div className="filterBlock cell">

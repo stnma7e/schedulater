@@ -1,6 +1,7 @@
 import ScheduleCalendar from '../schedule.js'
 import { connect } from 'react-redux'
-import { addCourse, removeCourse, removeAllCourses, changeCreditHours, lockCourseIndex, setSchedIndex } from "../../actions";
+import { addCourse, removeCourse, removeAllCourses, lockCourseIndex, setSchedIndex } from "../../reducers/courses"
+import { changeCreditHours, MAX_CREDIT_HOURS, MIN_CREDIT_HOURS } from "../../reducers/courseFilters";
 import fetchCourses from '../../actions/fetchCourses.js'
 
 const mapStateToProps = (state) => {
@@ -48,8 +49,27 @@ const mapDispatchToProps = (dispatch) => {
         })
       }
     },
-    changeCreditHours: (increment, minHours) => {
-      dispatch(changeCreditHours(increment, minHours))
+    changeCreditHours: (maxHours, minHours) => {
+        return (isSettingMinHours, event) => {
+            if (event.target.value < MIN_CREDIT_HOURS || event.target.value > MAX_CREDIT_HOURS) {
+              return
+            }
+
+            let increment = true
+
+            if (isSettingMinHours) {
+              if (minHours > event.target.value) {
+                // minHours was decremented
+                increment = false
+              }
+            } else {
+              if (maxHours > event.target.value) {
+                // minHours was decremented
+                increment = false
+              }
+            }
+            dispatch(changeCreditHours(increment, isSettingMinHours))
+        }
     },
     lockCourseIndex: (course, index) => {
       dispatch(lockCourseIndex(course, index))
