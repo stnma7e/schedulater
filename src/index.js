@@ -8,7 +8,7 @@ import thunkMiddleware from 'redux-thunk'
 import { Provider } from 'react-redux';
 
 import scheduleApp from "./schedule/reducers";
-import CoursedSchedule from './schedule/components/containers/coursedSchedule.js';
+import Schedule from './schedule';
 
 $(document).ready(function() {
   let store = createStore(scheduleApp, applyMiddleware(thunkMiddleware));
@@ -19,7 +19,7 @@ $(document).ready(function() {
 
   ReactDOM.render(
     <Provider store={store}>
-      <CoursedSchedule/>
+      <Schedule/>
     </Provider>,
     document.getElementById('calendar_container')
   );

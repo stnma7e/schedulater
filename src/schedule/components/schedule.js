@@ -1,109 +1,17 @@
 import $ from 'jquery';
-import timepicker from 'timepicker';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {
   Foundation,
   Button as ReactButton
 } from 'react-foundation';
-import {DataTable} from 'datatables.net';
-import {Button} from 'datatables.net-buttons-zf';
-import {Select} from 'datatables.net-select';
-require('../../../node_modules/foundation-sites/dist/js/foundation.min.js');
-require("../../../dist/app.scss");
 
-import CourseSelector from './course_selector.js';
-import Filters from './filter.js';
-import Calendar from './calendar.js';
-import CourseLock from './courseLock.js';
+import CourseSelector from './containers/courseSelectorContainer';
+import Filters from './containers/filterContainer';
+import Calendar from './calendar';
+import CourseLock from './courseLock';
 
 export default class ScheduleCalendar extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      coursesHaveUpdated: false,
-    };
-
-    this.nextSched = this.nextSched.bind(this);
-    this.lastSched = this.lastSched.bind(this);
-    this.requestClasses = this.requestClasses.bind(this);
-    this.addClasses = this.addClasses.bind(this);
-    this.removeClasses = this.removeClasses.bind(this);
-  }
-
-  requestClasses() {
-    var start_time = $('#start_time').timepicker('getTime').toTimeString();
-    var end_time   = $('#end_time').timepicker('getTime').toTimeString();
-
-    var instructor_filter = {};
-    for (var course in this.state.disabledInstructors) {
-      instructor_filter[course] = Array.from(this.state.disabledInstructors[course])
-    }
-
-    this.setState({
-      coursesHaveUpdated: false
-    });
-
-    this.props.requestCourses(this.state.coursesHaveUpdated, {
-      courses: this.props.selectedCourses,
-      time_filter: {
-        start: start_time,
-        end:   end_time
-      },
-      credit_filter: {
-        min_hours: this.props.courseFilters.creditHours.minHours,
-        max_hours: this.props.courseFilters.creditHours.maxHours
-      },
-      instructor_filter: this.props.instructors
-    });
-  }
-
-  addClasses(rows) {
-    this.props.addClasses(rows);
-
-    this.setState({
-      coursesHaveUpdated: true,
-    }, () => {
-      this.requestClasses()
-    });
-  }
-
-  removeClasses(rows) {
-    if (typeof rows == "undefined") {
-      console.error("rows were undefined")
-      return
-    }
-
-    this.props.removeClasses(rows)
-
-    this.setState({
-      coursesHaveUpdated: true,
-    }, () => {
-      this.requestClasses()
-    });
-  }
-
-  lastSched() {
-    if (this.props.schedIndex > 0) {
-      this.props.setSchedIndex(this.props.schedIndex - 1)
-      console.info(this.props.schedIndex + 1);
-    } else {
-      this.props.setSchedIndex(this.props.schedCount - 1)
-      console.info(this.props.schedIndex + 1);
-    }
-  }
-
-  nextSched() {
-    if (this.props.schedIndex < this.props.schedCount - 1) {
-      this.props.setSchedIndex(this.props.schedIndex + 1)
-      console.info(this.props.schedIndex + 1);
-    } else {
-      this.props.setSchedIndex(0)
-      console.info(this.props.schedIndex + 1);
-    }
-  }
-
   render() {
     let apppliedCombos = [];
     if ( typeof this.props.classes != "undefined"
@@ -147,36 +55,35 @@ export default class ScheduleCalendar extends React.Component {
                 </p>
               </div>
               <div className="cell small-4">
-                <ReactButton className='sched_button cell small-12' onClick={this.lastSched}>Previous Schedule</ReactButton>
+                <ReactButton
+                    className='sched_button cell small-12'
+                    onClick={this.props.setSchedIndex(false, this.props.schedIndex, this.props.schedCount)}
+                >
+                    Previous Schedule
+                </ReactButton>
               </div>
               <div className="cell small-4">
-                <ReactButton className='sched_button cell small-12' onClick={this.nextSched}>Next Schedule</ReactButton>
+                <ReactButton
+                    className='sched_button cell small-12'
+                    onClick={this.props.setSchedIndex(true, this.props.schedIndex, this.props.schedCount)}
+                >
+                    Next Schedule
+                </ReactButton>
               </div>
               <div className="cell small-1">
-                <ReactButton className='sched_button cell small-12' onClick={this.requestClasses}>&#x21bb;</ReactButton>
+                <ReactButton className='sched_button cell small-12' onClick={this.props.requestCourses}>&#x21bb;</ReactButton>
               </div>
             </div>
 
             <div className="grid-x grid-margin-x small-order-4">
               <hr className="cell small-centered small-12"/>
               <div className="cell courses_table small-12">
-                <CourseSelector requestClassesFunction={this.requestClasses}
-                                addClasses={this.addClasses}
-                                removeClasses={this.removeClasses}
-                />,
+                <CourseSelector/>
               </div>
             </div>
           </div>
 
-          <Filters
-            className="cell small-12 small-order-3 large-3 large-order-3"
-            handleCreditHours={this.props.changeCreditHours(
-                this.props.courseFilters.creditHours.maxHours,
-                this.props.courseFilters.creditHours.minHours
-            )}
-            minHours={this.props.courseFilters.creditHours.minHours}
-            maxHours={this.props.courseFilters.creditHours.maxHours}
-          />
+          <Filters className="cell small-12 small-order-3 large-3 large-order-3" />
         </div>
       </div>
     )

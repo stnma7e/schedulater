@@ -36,7 +36,10 @@ const instructors = (state = [], action) => {
   }
 }
 
-const instructorMap = (state = { instructors: [], courses: [] }, action) => {
+const instructorMap = (state = {
+    instructors: [],
+    courses: []
+}, action) => {
   switch (action.type) {
     case 'TOGGLE_INSTRUCTOR':
     case 'ADD_INSTRUCTOR':
