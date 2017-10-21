@@ -47,7 +47,7 @@ class CourseInstructorList extends React.Component {
     if (this.state.showInstructors) {
       return (
         <div>
-          <a href="#" onClick={this.handleClick}>{this.props.courseName}</a>
+          <a onClick={this.handleClick}>{this.props.courseName}</a>
           {
             this.props.instructors.map(function(instructor, i) {
               return (
@@ -64,7 +64,7 @@ class CourseInstructorList extends React.Component {
     } else {
       return (
         <div>
-          <a href="#" onClick={this.handleClick}>{this.props.courseName}</a>
+          <a onClick={this.handleClick}>{this.props.courseName}</a>
         </div>
       )
     }
@@ -81,7 +81,6 @@ class Instructor extends React.Component {
     return (
       <div>
         <a
-          href="#"
           onClick={() => this.props.handleClick(this.props.instructor)}
           style={style}
         >

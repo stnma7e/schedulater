@@ -1,9 +1,29 @@
 import React from 'react';
 
 export default class CourseLock extends React.Component {
+  constructor() {
+      super()
+
+      this.state = {
+          selected: false
+      }
+  }
   render() {
     return (
-      <div className="cell">
+      <div className="cell grid-y courseHolder"
+        style={{
+          "display": "flex",
+          "alignItems": "center",
+          "justifyContent": "center",
+        }}
+        onClick={() => {
+            this.setState((state) => {
+                selected: !state.selected
+            }, () => {
+                this.props.onClick(this.state.selected)
+            })
+        }}
+      >
         {this.props.course.title}, {function() {
             if (this.props.lockedIn[this.props.courseIndex] > 0) {
               return (
@@ -49,13 +69,13 @@ class AltClass extends React.Component {
     if (this.state.showClass) {
       return (
         <div>
-          <a href="#" onClick={this.handleClick}>{this.props.crn}</a>
+          <a onClick={this.handleClick}>{this.props.crn}</a>
         </div>
       )
     } else {
       return (
         <div>
-          <a href="#" onClick={this.handleClick}>{this.props.instructor}</a>
+          <a onClick={this.handleClick}>{this.props.instructor}</a>
         </div>
       )
     }

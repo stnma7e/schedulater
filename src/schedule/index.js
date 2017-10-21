@@ -11,6 +11,7 @@ const mapStateToProps = (state) => {
       combos:  [],
       schedIndex: 0,
       lockedIn: [],
+      selectedCourses: Array.from(state.selectedCourses),
     }
   }
 
@@ -20,6 +21,7 @@ const mapStateToProps = (state) => {
     combos:          state.courseSchedules.scheds.currentValidScheds,
     schedIndex:      state.courseSchedules.scheds.schedIndex,
     lockedIn:        state.courseSchedules.lockedIn,
+    selectedCourses: Array.from(state.selectedCourses),
   }
 }
 

@@ -9,12 +9,33 @@ import {
 import CourseSelector from './containers/courseSelectorContainer';
 import Filters from './containers/filterContainer';
 import Calendar from './calendar';
-import CourseLock from './courseLock';
+import CourseList from './containers/courseList';
 
 export default class ScheduleCalendar extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+        showClassList: false
+    };
+
+    this.handleClassAddition = this.handleClassAddition.bind(this);
+}
+  handleClassAddition() {
+    this.setState((prevState) => {
+      return {
+        showClassList: !prevState.showClassList
+      }
+    })
+  }
+
   render() {
     let apppliedCombos = [];
-    if ( typeof this.props.classes != "undefined"
+    if ( typeof this.props.selectedCourse != 'undefined'
+      && this.props.classes.length > this.props.selectedCourse
+    ) {
+        apppliedCombos = this.props.classes[this.props.selectedCourse].classes.map((c) => c[0])
+    } else if ( typeof this.props.classes != "undefined"
       && typeof this.props.combos  != "undefined"
       && this.props.combos.length > this.props.schedIndex
     ) {
@@ -22,22 +43,39 @@ export default class ScheduleCalendar extends React.Component {
       console.log(this.props.combos[this.props.schedIndex])
     }
 
+    let classList = null;
+    if (this.state.showClassList) {
+      classList = (
+        <div className="grid-x grid-margin-x">
+          <hr className="cell small-centered small-12"/>
+          <div className="cell courses_table small-12">
+            <CourseSelector requestClassesFunction={this.requestClasses}
+                            addClasses={this.addClasses}
+                            removeClasses={this.removeClasses}
+            />,
+          </div>
+        </div>
+      )
+    } else {
+      classList = (<div></div>)
+    }
+
     return (
       <div className="grid-container">
-        <div id="calendar_row" className="grid-x grid-padding-x">
 
-            <div className="cell grid-x grid-padding-x small-up-3">
-              {this.props.classes.map((c, i) => {
-                return (
-                  <CourseLock key={i}
-                    courseIndex={i}
-                    course={c}
-                    lockedIn={this.props.lockedIn}
-                  />
-                )
-              })}
-            </div>
+        <CourseList />
+        <div
+          onClick={this.handleClassAddition}
+          className="cell courseHolder"
+          id="addCourseButton"
+          style={{ "fontSize": "8em" }}
+          dangerouslySetInnerHTML={{__html: '&CirclePlus;'}}
+        >
+        </div>
 
+          {classList}
+
+        <div id="calendar_row" className="grid-x grid-padding-x grid-padding-y">
           <div className="cell small-12 large-9 small-order-1 large-order-1">
             <Calendar
               className="grid-x"

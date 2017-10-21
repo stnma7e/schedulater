@@ -9,9 +9,28 @@ const courseSchedules = (state = {
     schedIndex: 0
   },
   instructors: [],
-  lockedIn: []
+  lockedIn: [],
+  selectedCourse: undefined
 }, action) => {
   switch (action.type) {
+    case "SET_SELECTED_COURSE":
+        if (action.newIndex < 0) {
+            return Object.assign({}, state, {
+                scheds: Object.assign({}, state.scheds, {
+                    // this is broken
+                    currentValidScheds: state.scheds.allValidScheds.map((x) => x)
+                }),
+                    selectedCourse: null
+            })
+        }
+        return Object.assign({}, state, {
+            scheds: Object.assign({}, state.scheds, {
+                currentValidScheds: state.scheds.allValidScheds.filter((combo) => {
+                    combo[action.newIndex] > 0
+                })
+            }),
+            selectedCourse: action.newIndex
+        })
     case 'SET_SCHED_INDEX':
       return Object.assign({}, state, {
         scheds: {
@@ -145,4 +164,11 @@ export const setSchedIndex = (newIndex) => {
     type: "SET_SCHED_INDEX",
     newIndex
   }
+}
+
+export const setSelectedCourse = (courseIndex) => {
+    return {
+        type: "SET_SELECTED_COURSE",
+        newIndex: courseIndex
+    }
 }
