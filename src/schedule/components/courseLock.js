@@ -1,6 +1,13 @@
 import React from 'react';
 
 export default class CourseLock extends React.Component {
+  constructor() {
+      super()
+
+      this.state = {
+          selected: false
+      }
+  }
   render() {
     return (
       <div className="cell grid-y courseHolder"
@@ -9,7 +16,13 @@ export default class CourseLock extends React.Component {
           "alignItems": "center",
           "justifyContent": "center",
         }}
-        onClick={this.props.onClick}
+        onClick={() => {
+            this.setState((state) => {
+                selected: !state.selected
+            }, () => {
+                this.props.onClick(this.state.selected)
+            })
+        }}
       >
         {this.props.course.title}, {function() {
             if (this.props.lockedIn[this.props.courseIndex] > 0) {

@@ -1,8 +1,33 @@
+import $ from 'jquery';
+import timepicker from 'timepicker';
 import React from 'react';
 
 import ActiveInstructorFilter from './containers/activeInstructorFilter.js';
 
 export class Filter extends React.Component {
+  constructor(props) {
+      super(props)
+
+      $("#start_time").on('click', () => {
+        console.log("HERE")
+        this.props.changeStartTime($("#start_time").timepicker('getTime').toTimeString())
+      })
+      $("#end_time").on('click', () => {
+        console.log("HERE")
+        this.props.changeEndTime($("#end_time").timepicker('getTime').toTimeString())
+      })
+  }
+  componentDidMount() {
+    $("#start_time").timepicker({
+      minTime: "7:00am",
+      maxTime: "10:00pm",
+      step: 15});
+    $("#end_time").timepicker({
+      minTime: "7:00am",
+      maxTime: "10:00pm",
+      step: 15});
+  }
+
   render() {
     return (
       <div className="filterBlock cell">
@@ -45,6 +70,7 @@ export default class AllFilters extends React.Component {
                 type="text"
                 id="end_time"
                 defaultValue="19:00"
+                onChange={() => {console.log("HERE")}}
               />
             </div>
           </Filter>
@@ -56,7 +82,7 @@ export default class AllFilters extends React.Component {
                 type="number"
                 id="minHours"
                 value={this.props.minHours}
-                onChange={(event) => {this.props.handleCreditHours(true, event)}}
+                onChange={(event) => {this.props.changeCreditHours(true, event)}}
               />
             </div>
             <div className="cell small-6">
@@ -65,7 +91,7 @@ export default class AllFilters extends React.Component {
                 type="number"
                 id="maxHours"
                 value={this.props.maxHours}
-                onChange={(event) => {this.props.handleCreditHours(false, event)}}
+                onChange={(event) => {this.props.changeCreditHours(false, event)}}
               />
             </div>
           </Filter>

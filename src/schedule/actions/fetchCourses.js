@@ -1,16 +1,35 @@
-import { requestCourses, receiveCourses, replaceCourses, replaceInstructors } from '.';
+import { replaceCourses, replaceInstructors } from '../reducers/instructors';
+import { receiveCourses } from '../reducers/courses';
 
-const fetchCourses = (coursesHaveUpdated, courseFilters) => {
-  return function(dispatch) {
+const fetchCourses = () => {
+  return function(dispatch, getState) {
+
+    let coursesHaveUpdated = getState().courseFilters.coursesHaveUpdated
+    let courseFilters = {
+        courses: [...Array.from(getState().selectedCourses)],
+        time_filter: {
+            // start: getState().courseFilters.timeFilter.start,
+            // end: getState().courseFilters.timeFilter.end,
+            start: $("#start_time").timepicker('getTime').toTimeString(),
+            end: $("#end_time").timepicker('getTime').toTimeString()
+        },
+        credit_filter: {
+            min_hours: getState().courseFilters.creditHours.minHours,
+            max_hours: getState().courseFilters.creditHours.maxHours
+        },
+        instructor_filter: getState().instructorMap
+    }
+
     return (
+      /*
       fetch('/courses', {
         method: 'POST',
         body: '{"courses":["SURVEY OF CHEMISTRY I","SURVEY OF CHEMISTRY II","CHEM I CONCEPT DEVELOPMENT","PRINCIPLES OF CHEMISTRY I","PRINCIPLES OF CHEMISTRY II","INTERMEDIATE ORG CHEM LAB I","ORGANIC CHEMISTRY I","ORGANIC CHEMISTRY PROBLEMS I","ORGANIC CHEMISTRY II"],"time_filter":{"start":"08:00:00 GMT-0400 (EDT)","end":"19:00:00 GMT-0400 (EDT)"},"credit_filter":{"min_hours":12,"max_hours":15},"instructor_filter":{}}'
       })
       .then(response => response.json())
       .then(json => processInput(dispatch, json, true))
+      */
 
-    /*
       fetch('/courses', {
         method: 'POST',
         body: JSON.stringify(Object.assign({}, courseFilters, {
@@ -29,7 +48,6 @@ const fetchCourses = (coursesHaveUpdated, courseFilters) => {
       })
       .then(response => response.json())
       .then(json => processInput(dispatch, json, coursesHaveUpdated))
-      */
     )
   }
 }

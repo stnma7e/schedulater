@@ -1,5 +1,9 @@
 import React from 'react';
 
+import {DataTable} from 'datatables.net';
+import {Button} from 'datatables.net-buttons-zf';
+import {Select} from 'datatables.net-select';
+
 export default class CourseSelector extends React.Component {
   constructor() {
     super();
@@ -10,7 +14,7 @@ export default class CourseSelector extends React.Component {
     fetch('/subjects').then(function(result) {
       return result.json()
     }).then(function(result) {
-      this.setState({subjects: result});
+      this.setState({ subjects: result });
     }.bind(this));
   }
 

@@ -1,0 +1,33 @@
+import { connect } from 'react-redux'
+import { setSelectedCourse } from '../../reducers/courses'
+
+import CourseList from '../courseList'
+
+const mapStateToProps = (state) => {
+  if (typeof state.courseSchedules == "undefined") {
+    return {
+      classes: [],
+      lockedIn: [],
+    }
+  }
+
+  return {
+    classes:         state.courseSchedules.flat_courses,
+    lockedIn:        state.courseSchedules.lockedIn,
+  }
+}
+
+const mapDispatchToProps = (dispatch) => {
+  return {
+    setSelectedCourse: (newIndex) => {
+        dispatch(setSelectedCourse(newIndex))
+    }
+  }
+}
+
+const CourseListContainer = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(CourseList)
+
+export default CourseListContainer

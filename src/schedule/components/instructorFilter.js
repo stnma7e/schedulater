@@ -1,7 +1,7 @@
 import React from 'react';
 import { Filter } from './filter.js';
 
-class InstructorFilter extends React.Component {
+export default class InstructorFilter extends React.Component {
   render() {
     return (
       <Filter filterType="Instructors">
@@ -90,5 +90,3 @@ class Instructor extends React.Component {
     )
   }
 }
-
-export { InstructorFilter }
