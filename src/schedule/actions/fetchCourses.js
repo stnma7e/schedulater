@@ -1,5 +1,6 @@
 import { replaceCourses, replaceInstructors } from '../reducers/instructors';
 import { receiveCourses } from '../reducers/courses';
+import { FlatCourse, Class, CourseResponse } from '../../common';
 
 const fetchCourses = () => {
   return function(dispatch, getState) {
@@ -26,7 +27,18 @@ const fetchCourses = () => {
         body: '{"courses":["SURVEY OF CHEMISTRY I","SURVEY OF CHEMISTRY II","CHEM I CONCEPT DEVELOPMENT","PRINCIPLES OF CHEMISTRY I","PRINCIPLES OF CHEMISTRY II","INTERMEDIATE ORG CHEM LAB I","ORGANIC CHEMISTRY I","ORGANIC CHEMISTRY PROBLEMS I","ORGANIC CHEMISTRY II"],"time_filter":{"start":"08:00:00 GMT-0400 (EDT)","end":"19:00:00 GMT-0400 (EDT)"},"credit_filter":{"min_hours":12,"max_hours":15},"instructor_filter":{}}'
       })
       .then(response => response.json())
-      .then(json => processInput(dispatch, json, true))
+      .then(json => {
+          let flat_courses = json.flat_courses.map((course) => {
+              let classes = course.classes.map((classtime) => {
+                  return classtime.map((c) => {
+                      return new Class(c.crn, c.cap, c.remaining, c.instructor, c.daytimes)
+                  })
+              })
+              return new FlatCourse(course.subject, course.course_num, course.credits, course.title, classes)
+          })
+          let response = new CourseResponse(json.sched_count, json.instructors, flat_courses, json.scheds)
+          processInput(dispatch, response, true)
+      })
 
       /*
       fetch('/courses', {

@@ -1,6 +1,8 @@
 import $ from 'jquery';
 import React from 'react';
+import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
+
 import {
   Foundation,
   Button as ReactButton
@@ -10,8 +12,9 @@ import CourseSelector from './containers/courseSelectorContainer';
 import Filters from './containers/filterContainer';
 import Calendar from './calendar';
 import CourseList from './containers/courseList';
+import { FlatCourse } from '../../common'
 
-export default class ScheduleCalendar extends React.Component {
+export default class Schedule extends React.Component {
   constructor(props) {
     super(props);
 
@@ -126,6 +129,16 @@ export default class ScheduleCalendar extends React.Component {
       </div>
     )
   }
+}
+
+Schedule.propTypes = {
+    schedCount:      PropTypes.number,
+    classes:         PropTypes.arrayOf(PropTypes.instanceOf(FlatCourse)), // make this specific to flat_courses
+    combos:          PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)),
+    schedIndex:      PropTypes.number,
+    lockedIn:        PropTypes.arrayOf(PropTypes.number),
+    selectedCourses: PropTypes.array
+
 }
 
 export function applyComboToClasses(classes, combo) {
