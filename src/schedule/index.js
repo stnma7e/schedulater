@@ -20,7 +20,7 @@ const mapStateToProps = (state) => {
     classes:         state.courseSchedules.flat_courses,
     combos:          state.courseSchedules.scheds.currentValidScheds,
     schedIndex:      state.courseSchedules.scheds.schedIndex,
-    lockedIn:        state.courseSchedules.lockedIn,
+    lockedIn:        state.courseSchedules.schedFilters.lockedIn.lockedInList,
     selectedCourses: Array.from(state.selectedCourses),
   }
 }

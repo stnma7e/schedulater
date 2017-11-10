@@ -12,8 +12,8 @@ const mapStateToProps = (state) => {
   }
 
   return {
-    classes:         state.courseSchedules.flat_courses,
-    lockedIn:        state.courseSchedules.lockedIn,
+    classes:  state.courseSchedules.flat_courses,
+    lockedIn: state.courseSchedules.schedFilters.lockedIn.lockedInList,
   }
 }
 

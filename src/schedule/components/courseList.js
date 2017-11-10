@@ -9,15 +9,15 @@ export default class CourseList extends React.Component {
             {this.props.classes.map((c, i) => {
               return (
                 <CourseLock key={i}
-                  courseIndex={i}
-                  course={c}
-                  lockedIn={this.props.lockedIn}
+                    courseIndex={i}
+                    course={c}
+                    lockedIn={this.props.lockedIn}
                     onClick={(selected) => {
-                        if (!selected) {
-                          this.props.setSelectedCourse(i)
-                      } else {
-                          this.props.setSelectedCourse(-1)
-                      }
+                        if (selected) {
+                            this.props.setSelectedCourse(i)
+                        } else {
+                            this.props.setSelectedCourse(null)
+                        }
                     }}
                 />
               )

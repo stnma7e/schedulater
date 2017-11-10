@@ -21,15 +21,14 @@ const fetchCourses = () => {
     }
 
     return (
-      /*
       fetch('/courses', {
         method: 'POST',
         body: '{"courses":["SURVEY OF CHEMISTRY I","SURVEY OF CHEMISTRY II","CHEM I CONCEPT DEVELOPMENT","PRINCIPLES OF CHEMISTRY I","PRINCIPLES OF CHEMISTRY II","INTERMEDIATE ORG CHEM LAB I","ORGANIC CHEMISTRY I","ORGANIC CHEMISTRY PROBLEMS I","ORGANIC CHEMISTRY II"],"time_filter":{"start":"08:00:00 GMT-0400 (EDT)","end":"19:00:00 GMT-0400 (EDT)"},"credit_filter":{"min_hours":12,"max_hours":15},"instructor_filter":{}}'
       })
       .then(response => response.json())
       .then(json => processInput(dispatch, json, true))
-      */
 
+      /*
       fetch('/courses', {
         method: 'POST',
         body: JSON.stringify(Object.assign({}, courseFilters, {
@@ -48,6 +47,7 @@ const fetchCourses = () => {
       })
       .then(response => response.json())
       .then(json => processInput(dispatch, json, coursesHaveUpdated))
+      */
     )
   }
 }

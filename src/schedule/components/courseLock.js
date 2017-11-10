@@ -17,8 +17,10 @@ export default class CourseLock extends React.Component {
           "justifyContent": "center",
         }}
         onClick={() => {
-            this.setState((state) => {
-                selected: !state.selected
+            this.setState((prevState) => {
+                return {
+                    selected: !prevState.selected
+                }
             }, () => {
                 this.props.onClick(this.state.selected)
             })

@@ -1,57 +1,88 @@
 import { applyComboToClasses } from "../components/schedule.js"
 
 const courseSchedules = (state = {
-  sched_count: 0,
   flat_courses: [],
+  instructors: [],
+  sched_count: 0,
   scheds: {
     currentValidScheds: [],
     allValidScheds:     [],
     schedIndex: 0
   },
-  instructors: [],
-  lockedIn: [],
-  selectedCourse: undefined
+  schedFilters: {
+      selectedCourse: (x) => {return true},
+      lockedIn: {
+            validScheds: (x) => {return true},
+            lockedInList: []
+      }
+  }
 }, action) => {
-  switch (action.type) {
-    case "SET_SELECTED_COURSE":
-        if (action.newIndex < 0) {
+    switch (action.type) {
+        case 'RECEIVE_COURSES':
+        // replace the current state with the network input
+            return Object.assign({}, state, action.courses, {
+                scheds: {
+                    currentValidScheds: action.courses.scheds,
+                    allValidScheds:     action.courses.scheds.map((x) => { return x }),
+                    schedIndex: 0
+                },
+                schedFilters: Object.assign({}, state.schedFilters, {
+                    lockedIn: Object.assign({}, state.schedFilters.lockedIn, {
+                        lockedInList: Array.apply(null,
+                            Array(action.courses.flat_courses.length))
+                            .map(Number.prototype.valueOf,0)
+                    })
+                })
+            })
+        case 'SET_SCHED_INDEX':
             return Object.assign({}, state, {
                 scheds: Object.assign({}, state.scheds, {
-                    // this is broken
-                    currentValidScheds: state.scheds.allValidScheds.map((x) => x)
-                }),
-                    selectedCourse: null
+                    schedIndex: action.newIndex
+                })
+            })
+
+        // one of the filters to our schedules has been changed
+        // re-evaluate currentValidScheds
+        case 'SET_SELECTED_COURSE':
+        case 'LOCK_COURSE_INDEX':
+            filters = filterScheds(state, action)
+            let validScheds = state.scheds.allValidScheds
+                .filter(filters.selectedCourse)
+                .filter(filters.lockedIn.validScheds)
+            console.log(validScheds)
+            let currentSched = state.scheds.currentValidScheds[state.scheds.schedIndex];
+
+            return Object.assign({}, state, {
+                schedFilters: filters,
+                scheds: Object.assign({}, state.scheds, {
+                    currentValidScheds: validScheds,
+                    schedIndex: Math.max(validScheds.findIndex((x) => x == currentSched), 0)
+                })
+            })
+        default:
+            return state
+    }
+}
+
+const filterScheds = (state, action) => {
+  switch (action.type) {
+    case "SET_SELECTED_COURSE":
+        console.log(action.newIndex)
+        if (action.newIndex == null) {
+            return Object.assign({}, state.schedFilters, {
+                selectedCourse: (x) => { return true }
             })
         }
-        return Object.assign({}, state, {
-            scheds: Object.assign({}, state.scheds, {
-                currentValidScheds: state.scheds.allValidScheds.filter((combo) => {
-                    combo[action.newIndex] > 0
-                })
-            }),
-            selectedCourse: action.newIndex
+
+        return Object.assign({}, state.schedFilters, {
+            selectedCourse: (combo) => {
+                return combo[action.newIndex] > 0
+            }
         })
-    case 'SET_SCHED_INDEX':
-      return Object.assign({}, state, {
-        scheds: {
-          currentValidScheds: state.scheds.currentValidScheds,
-          allValidScheds: state.scheds.allValidScheds,
-          schedIndex: action.newIndex
-        }
-      })
-    case 'RECEIVE_COURSES':
-      return Object.assign({}, action.courses, {
-        scheds: {
-          currentValidScheds: action.courses.scheds,
-          allValidScheds:     action.courses.scheds.map((x) => { return x }),
-          schedIndex: 0
-        },
-        lockedIn: Array.apply(null, Array(action.courses.flat_courses.length)).map(Number.prototype.valueOf,0)
-      })
     case 'LOCK_COURSE_INDEX':
       let course_index, class_index = 0;
-      for (var i=0; i<state.flat_courses.length; i++) {
-        for (var j=0; j<state.flat_courses[i].classes.length; j++) {
+      for (var i = 0; i < state.flat_courses.length; i++) {
+        for (var j = 0; j < state.flat_courses[i].classes.length; j++) {
           // just use the first crn in the list because all we're worried about
           // is the time that it occurs at, the actual CRN cane be manipulated
           // later
@@ -62,7 +93,7 @@ const courseSchedules = (state = {
         }
       }
 
-      let newLockedIn = state.lockedIn.map((combo_index, idx) => {
+      let newLockedIn = state.schedFilters.lockedIn.lockedInList.map((combo_index, idx) => {
           if (idx == course_index) {
             if (combo_index == class_index) {
               return 0
@@ -74,32 +105,27 @@ const courseSchedules = (state = {
           }
         })
 
-      let newCurrentValidScheds = state.scheds.allValidScheds.filter((combo, idx) => {
-            for (var i=0; i<combo.length; i++) {
-              if (newLockedIn[i] == 0) {
-                continue
-              }
-              if (combo[i] != newLockedIn[i]) {
-                return false
-              }
+    console.log("NLL: " + newLockedIn)
+
+      return Object.assign({}, state.schedFilters, {
+        lockedIn: {
+            lockedInList: newLockedIn,
+            validScheds: (combo, idx) => {
+                for (var i = 0; i < combo.length; i++) {
+                    if (newLockedIn[i] == 0) {
+                        continue
+                    }
+                    if (combo[i] != newLockedIn[i]) {
+                        return false
+                    }
+                }
+
+                return true
             }
-
-            return true
-          })
-
-      let currentSched = state.scheds.currentValidScheds[state.scheds.schedIndex];
-      let newSchedIndex = newCurrentValidScheds.findIndex((x) => x == currentSched);
-
-      return Object.assign({}, state, {
-        scheds: {
-          allValidScheds: state.scheds.allValidScheds,
-          currentValidScheds: newCurrentValidScheds,
-          schedIndex: newSchedIndex
-        },
-        lockedIn: newLockedIn
+        }
       })
     default:
-      return state
+      return state.schedFilters
   }
 }
 
