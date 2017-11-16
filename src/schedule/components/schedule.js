@@ -19,7 +19,7 @@ export default class Schedule extends React.Component {
     super(props);
 
     this.state = {
-        showClassList: false
+        showCourseSelector: false
     };
 
     this.handleClassAddition = this.handleClassAddition.bind(this);
@@ -27,40 +27,32 @@ export default class Schedule extends React.Component {
   handleClassAddition() {
     this.setState((prevState) => {
       return {
-        showClassList: !prevState.showClassList
+        showCourseSelector: !prevState.showCourseSelector
       }
     })
   }
 
   render() {
     let apppliedCombos = [];
-    if ( typeof this.props.selectedCourse != 'undefined'
-      && this.props.classes.length > this.props.selectedCourse
-    ) {
-        apppliedCombos = this.props.classes[this.props.selectedCourse].classes.map((c) => c[0])
-    } else if ( typeof this.props.classes != "undefined"
-      && typeof this.props.combos  != "undefined"
-      && this.props.combos.length > this.props.schedIndex
-    ) {
-      apppliedCombos = applyComboToClasses(this.props.classes, this.props.combos[this.props.schedIndex])
+    if (this.props.courses.length > this.props.selectedCourse) {
+        apppliedCombos = this.props.courses[this.props.selectedCourse].classes.map((c) => c[0])
+    } else if (this.props.combos.length > this.props.schedIndex) {
+      apppliedCombos = applyComboToClasses(this.props.courses, this.props.combos[this.props.schedIndex])
       console.log(this.props.combos[this.props.schedIndex])
     }
 
-    let classList = null;
-    if (this.state.showClassList) {
-      classList = (
+    let courseSelector = null;
+    if (this.state.showCourseSelector) {
+      courseSelector = (
         <div className="grid-x grid-margin-x">
           <hr className="cell small-centered small-12"/>
           <div className="cell courses_table small-12">
-            <CourseSelector requestClassesFunction={this.requestClasses}
-                            addClasses={this.addClasses}
-                            removeClasses={this.removeClasses}
-            />,
+            <CourseSelector />,
           </div>
         </div>
       )
     } else {
-      classList = (<div></div>)
+      courseSelector = (<div></div>)
     }
 
     return (
@@ -76,7 +68,7 @@ export default class Schedule extends React.Component {
         >
         </div>
 
-          {classList}
+        {courseSelector}
 
         <div id="calendar_row" className="grid-x grid-padding-x grid-padding-y">
           <div className="cell small-12 large-9 small-order-1 large-order-1">
@@ -133,11 +125,10 @@ export default class Schedule extends React.Component {
 
 Schedule.propTypes = {
     schedCount:      PropTypes.number,
-    classes:         PropTypes.arrayOf(PropTypes.instanceOf(FlatCourse)), // make this specific to flat_courses
+    classes:         PropTypes.arrayOf(PropTypes.instanceOf(FlatCourse)),
     combos:          PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)),
     schedIndex:      PropTypes.number,
     lockedIn:        PropTypes.arrayOf(PropTypes.number),
-    selectedCourses: PropTypes.array
 
 }
 

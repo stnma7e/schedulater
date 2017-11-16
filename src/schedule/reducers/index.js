@@ -1,11 +1,12 @@
 import { combineReducers } from 'redux';
 import instructorMap from './instructors.js';
-import { selectedCourses, courseSchedules } from './courses.js';
+import courseSchedules from './courses.js';
+import scheduledCourses from './scheduledCourses.js';
 import courseFilters from './courseFilters.js'
 
 const scheduleApp = combineReducers({
   instructorMap,
-  selectedCourses,
+  scheduledCourses,
   courseSchedules,
   courseFilters
 });

@@ -1,4 +1,7 @@
 import React from 'react';
+import PropTypes from 'prop-types';
+
+import { FlatCourse } from '../../common'
 
 export default class CourseLock extends React.Component {
   constructor() {
@@ -50,6 +53,12 @@ export default class CourseLock extends React.Component {
   }
 }
 
+CourseLock.propTypes = {
+    courseIndex: PropTypes.number,
+    course:      PropTypes.instanceOf(FlatCourse),
+    lockedIn:    PropTypes.arrayOf(PropTypes.number)
+}
+
 class AltClass extends React.Component {
   constructor(props) {
     super(props);
@@ -82,4 +91,9 @@ class AltClass extends React.Component {
       )
     }
   }
+}
+
+AltClass.propTypes = {
+    crn:        PropTypes.string,
+    instructor: PropTypes.string
 }

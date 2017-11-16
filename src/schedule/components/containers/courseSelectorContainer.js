@@ -1,6 +1,6 @@
 import { connect } from 'react-redux'
 import { toggleClassesHaveUpdated, changeStartTime, changeEndTime } from '../../reducers/courseFilters'
-import { addCourse, removeCourse, removeAllCourses } from '../../reducers/courses'
+import { addCourse, removeCourse, removeAllCourses } from '../../reducers/scheduledCourses'
 import fetchCourses from '../../actions/fetchCourses'
 import CourseSelector from '../courseSelector'
 

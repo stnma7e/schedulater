@@ -1,5 +1,5 @@
 export function CourseResponse(schedCount, instructors, flat_courses, scheds) {
-    this.sched_count  = schedCount
+    this.schedCount   = schedCount
     this.instructors  = instructors
     this.flat_courses = flat_courses
     this.scheds       = scheds
@@ -13,7 +13,7 @@ export function FlatCourse(subject, courseNum, credits, title, classes) {
     this.classes   = classes
 }
 
-export function Class(crn, cap, remaining, instructor, daytimes) {
+export function Section(crn, cap, remaining, instructor, daytimes) {
     this.crn        = crn
     this.cap        = cap
     this.remaining  = remaining

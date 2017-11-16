@@ -4,24 +4,23 @@ import { addCourse, removeCourse, removeAllCourses, lockCourseIndex, setSchedInd
 import fetchCourses from './actions/fetchCourses'
 
 const mapStateToProps = (state) => {
-  if (typeof state.courseSchedules == "undefined") {
-    return {
-      schedCount: 0,
-      classes: [],
-      combos:  [],
-      schedIndex: 0,
-      lockedIn: [],
-      selectedCourses: Array.from(state.selectedCourses),
-    }
-  }
+//  if (typeof state.courseSchedules == "undefined") {
+//    return {
+//      schedCount: 0,
+//      courses: [],
+//      combos:  [],
+//      schedIndex: 0,
+//      lockedIn: [],
+//      selectedCourses: Array.from(state.selectedCourses),
+//    }
+//  }
 
   return {
     schedCount:      state.courseSchedules.scheds.currentValidScheds.length,
-    classes:         state.courseSchedules.flat_courses,
-    combos:          state.courseSchedules.scheds.currentValidScheds,
     schedIndex:      state.courseSchedules.scheds.schedIndex,
+    courses:         state.courseSchedules.flat_courses,
+    combos:          state.courseSchedules.scheds.currentValidScheds,
     lockedIn:        state.courseSchedules.schedFilters.lockedIn.lockedInList,
-    selectedCourses: Array.from(state.selectedCourses),
   }
 }
 

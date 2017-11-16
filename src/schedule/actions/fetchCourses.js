@@ -1,13 +1,13 @@
 import { replaceCourses, replaceInstructors } from '../reducers/instructors';
-import { receiveCourses } from '../reducers/courses';
-import { FlatCourse, Class, CourseResponse } from '../../common';
+import { receiveCourses } from '../reducers/scheduledCourses';
+import { FlatCourse, Section, CourseResponse } from '../../common';
 
 const fetchCourses = () => {
   return function(dispatch, getState) {
 
     let coursesHaveUpdated = getState().courseFilters.coursesHaveUpdated
     let courseFilters = {
-        courses: [...Array.from(getState().selectedCourses)],
+        courses: [...Array.from(getState().scheduledCourses)],
         time_filter: {
             // start: getState().courseFilters.timeFilter.start,
             // end: getState().courseFilters.timeFilter.end,
@@ -31,7 +31,7 @@ const fetchCourses = () => {
           let flat_courses = json.flat_courses.map((course) => {
               let classes = course.classes.map((classtime) => {
                   return classtime.map((c) => {
-                      return new Class(c.crn, c.cap, c.remaining, c.instructor, c.daytimes)
+                      return new Section(c.crn, c.cap, c.remaining, c.instructor, c.daytimes)
                   })
               })
               return new FlatCourse(course.subject, course.course_num, course.credits, course.title, classes)
@@ -57,17 +57,17 @@ const fetchCourses = () => {
           }, {})
         }))
       })
-      .then(response => response.json())
-      .then(json => processInput(dispatch, json, coursesHaveUpdated))
+      .then(response => response.response())
+      .then(response => processInput(dispatch, response, coursesHaveUpdated))
       */
     )
   }
 }
 
-function processInput(dispatch, json, coursesHaveUpdated) {
-  dispatch(receiveCourses(json));
+function processInput(dispatch, response, coursesHaveUpdated) {
+  dispatch(receiveCourses(response));
 
-  if (json.sched_count < 1) {
+  if (response.schedCount < 1) {
     alert("There weren't any schedules that could be made from the options you selected. Maybe the minimum credit hours are set too high, or some filters are too restrictive.")
   }
 
@@ -76,17 +76,17 @@ function processInput(dispatch, json, coursesHaveUpdated) {
     var courses = [];
     var course_idx = 0;
     var ins_idx = 0;
-    for (var course in json.instructors) {
+    for (var course in response.instructors) {
       course_idx++,
       courses.push({
         name: course,
         instructors: []
       })
-      for (var instructor in json.instructors[course]) {
+      for (var instructor in response.instructors[course]) {
         courses[course_idx-1].instructors.push(ins_idx);
         ins_idx++;
         instructors.push({
-          name: json.instructors[course][instructor],
+          name: response.instructors[course][instructor],
           active: true
         })
       }
@@ -96,7 +96,7 @@ function processInput(dispatch, json, coursesHaveUpdated) {
     dispatch(replaceInstructors(instructors));
   }
 
-  console.info("schedCount:", json.sched_count);
+  console.info("schedCount:", response.schedCount);
 }
 
 export default fetchCourses

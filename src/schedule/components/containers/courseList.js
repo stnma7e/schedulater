@@ -6,13 +6,13 @@ import CourseList from '../courseList'
 const mapStateToProps = (state) => {
   if (typeof state.courseSchedules == "undefined") {
     return {
-      classes: [],
+      courses: [],
       lockedIn: [],
     }
   }
 
   return {
-    classes:  state.courseSchedules.flat_courses,
+    courses:  state.courseSchedules.flat_courses,
     lockedIn: state.courseSchedules.schedFilters.lockedIn.lockedInList,
   }
 }
