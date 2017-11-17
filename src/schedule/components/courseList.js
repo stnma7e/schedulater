@@ -13,13 +13,7 @@ export default class CourseList extends React.Component {
                     courseIndex={i}
                     course={c}
                     lockedIn={this.props.lockedIn}
-                    onClick={(selected) => {
-                        if (selected) {
-                            this.props.setSelectedCourse(i)
-                        } else {
-                            this.props.setSelectedCourse(null)
-                        }
-                    }}
+                    onClick={() => this.props.setSelectedCourse(i)}
                 />
               )
             })}

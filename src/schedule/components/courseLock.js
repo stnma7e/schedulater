@@ -6,10 +6,6 @@ import { FlatCourse } from '../../common'
 export default class CourseLock extends React.Component {
   constructor() {
       super()
-
-      this.state = {
-          selected: false
-      }
   }
   render() {
     return (
@@ -19,15 +15,7 @@ export default class CourseLock extends React.Component {
           "alignItems": "center",
           "justifyContent": "center",
         }}
-        onClick={() => {
-            this.setState((prevState) => {
-                return {
-                    selected: !prevState.selected
-                }
-            }, () => {
-                this.props.onClick(this.state.selected)
-            })
-        }}
+        onClick={this.props.onClick}
       >
         {this.props.course.title}, {function() {
             if (this.props.lockedIn[this.props.courseIndex] > 0) {
@@ -94,6 +82,6 @@ class AltClass extends React.Component {
 }
 
 AltClass.propTypes = {
-    crn:        PropTypes.string,
+    crn:        PropTypes.number,
     instructor: PropTypes.string
 }

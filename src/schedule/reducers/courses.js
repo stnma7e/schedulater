@@ -10,6 +10,7 @@ const courseSchedules = (state = {
     schedIndex: 0
   },
   schedFilters: {
+      selectedCourseIndex: null,
       selectedCourse: (x) => {return true},
       lockedIn: {
             validScheds: (x) => {return true},
@@ -45,7 +46,7 @@ const courseSchedules = (state = {
         // re-evaluate currentValidScheds
         case 'SET_SELECTED_COURSE':
         case 'LOCK_COURSE_INDEX':
-            filters = filterScheds(state, action)
+            let filters = filterScheds(state, action)
             let validScheds = state.scheds.allValidScheds
                 .filter(filters.selectedCourse)
                 .filter(filters.lockedIn.validScheds)
@@ -68,14 +69,20 @@ export default courseSchedules
 const filterScheds = (state, action) => {
   switch (action.type) {
     case "SET_SELECTED_COURSE":
-        console.log(action.newIndex)
         if (action.newIndex == null) {
             return Object.assign({}, state.schedFilters, {
+                selectedCourseIndex: action.newIndex,
+                selectedCourse: (x) => { return true }
+            })
+        } else if (action.newIndex == state.schedFilters.selectedCourseIndex) {
+            return Object.assign({}, state.schedFilters, {
+                selectedCourseIndex: null,
                 selectedCourse: (x) => { return true }
             })
         }
 
         return Object.assign({}, state.schedFilters, {
+            selectedCourseIndex: action.newIndex,
             selectedCourse: (combo) => {
                 return combo[action.newIndex] > 0
             }
