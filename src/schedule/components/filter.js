@@ -5,32 +5,34 @@ import React from 'react';
 import ActiveInstructorFilter from './containers/activeInstructorFilter.js';
 
 export class Filter extends React.Component {
-  constructor(props) {
-      super(props)
+    constructor(props) {
+        super(props)
 
-      $("#start_time").on('click', () => {
-        console.log("HERE")
-        this.props.changeStartTime($("#start_time").timepicker('getTime').toTimeString())
-      })
-      $("#end_time").on('click', () => {
-        console.log("HERE")
-        this.props.changeEndTime($("#end_time").timepicker('getTime').toTimeString())
-      })
-  }
-  componentDidMount() {
-    $("#start_time").timepicker({
-      minTime: "7:00am",
-      maxTime: "10:00pm",
-      step: 15});
-    $("#end_time").timepicker({
-      minTime: "7:00am",
-      maxTime: "10:00pm",
-      step: 15});
-  }
+        $("#start_time").on('click', () => {
+            console.log("HERE")
+            this.props.changeStartTime($("#start_time").timepicker('getTime').toTimeString())
+        })
+        $("#end_time").on('click', () => {
+            console.log("HERE")
+            this.props.changeEndTime($("#end_time").timepicker('getTime').toTimeString())
+        })
+    }
+    componentDidMount() {
+        $("#start_time").timepicker({
+            minTime: "7:00am",
+            maxTime: "10:00pm",
+            step: 15
+        });
+        $("#end_time").timepicker({
+            minTime: "7:00am",
+            maxTime: "10:00pm",
+            step: 15
+        });
+    }
 
-  render() {
-    return (
-      <div className="filterBlock cell">
+    render() {
+        return (
+            <div className="filterBlock cell">
         <div className="card">
           <div className="card-divider">
             <h6>{this.props.filterType}</h6>
@@ -40,14 +42,14 @@ export class Filter extends React.Component {
           </div>
         </div>
       </div>
-    )
-  }
+        )
+    }
 }
 
 export default class AllFilters extends React.Component {
-  render() {
-    return (
-      <div id="filters" className={this.props.className}>
+    render() {
+        return (
+            <div id="filters" className={this.props.className}>
         <h5>Filters:</h5>
         <hr/>
         <div className="grid-x grid-padding-x small-up-3 large-up-1">
@@ -100,6 +102,6 @@ export default class AllFilters extends React.Component {
 
         </div>
       </div>
-    )
-  }
+        )
+    }
 }

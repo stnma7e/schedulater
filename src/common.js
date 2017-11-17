@@ -1,22 +1,22 @@
 export function CourseResponse(schedCount, instructors, flat_courses, scheds) {
-    this.schedCount   = schedCount
-    this.instructors  = instructors
+    this.schedCount = schedCount
+    this.instructors = instructors
     this.flat_courses = flat_courses
-    this.scheds       = scheds
+    this.scheds = scheds
 }
 
 export function FlatCourse(subject, courseNum, credits, title, classes) {
-    this.subject   = subject
+    this.subject = subject
     this.courseNum = courseNum
-    this.credits   = credits
-    this.title     = title
-    this.classes   = classes
+    this.credits = credits
+    this.title = title
+    this.classes = classes
 }
 
 export function Section(crn, cap, remaining, instructor, daytimes) {
-    this.crn        = crn
-    this.cap        = cap
-    this.remaining  = remaining
+    this.crn = crn
+    this.cap = cap
+    this.remaining = remaining
     this.instructor = instructor
-    this.daytimes   = daytimes
+    this.daytimes = daytimes
 }

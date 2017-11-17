@@ -1,25 +1,29 @@
-import { connect } from 'react-redux'
-import { toggleInstructor } from '../../reducers/instructors'
+import {
+    connect
+} from 'react-redux'
+import {
+    toggleInstructor
+} from '../../reducers/instructors'
 import InstructorFilter from '../instructorFilter'
 
 const mapStateToProps = (state) => {
-  return {
-    instructors: state.instructorMap.instructors,
-    courses: state.instructorMap.courses
-  }
+    return {
+        instructors: state.instructorMap.instructors,
+        courses: state.instructorMap.courses
+    }
 }
 
 const mapDispatchToProps = (dispatch) => {
-  return {
-    handleInstructorClick: (instructor) => {
-      dispatch(toggleInstructor(instructor.name))
+    return {
+        handleInstructorClick: (instructor) => {
+            dispatch(toggleInstructor(instructor.name))
+        }
     }
-  }
 }
 
 const ActiveInstructorFilter = connect(
-  mapStateToProps,
-  mapDispatchToProps
+    mapStateToProps,
+    mapDispatchToProps
 )(InstructorFilter)
 
 export default ActiveInstructorFilter

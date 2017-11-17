@@ -1,1 +1,0 @@
-/home/sam/src/sched/sched/target/asmjs-unknown-emscripten/debug/sched.js

@@ -1,10 +1,12 @@
 import React from 'react';
-import { Filter } from './filter.js';
+import {
+    Filter
+} from './filter.js';
 
 export default class InstructorFilter extends React.Component {
-  render() {
-    return (
-      <Filter filterType="Instructors">
+    render() {
+        return (
+            <Filter filterType="Instructors">
         {
           this.props.courses.map(function(course, i) {
             return (
@@ -22,31 +24,33 @@ export default class InstructorFilter extends React.Component {
           }.bind(this))
         }
       </Filter>
-    )
-  }
+        )
+    }
 }
 
 class CourseInstructorList extends React.Component {
-  constructor(props) {
-    super(props);
+    constructor(props) {
+        super(props);
 
-    this.state = {
-      showInstructors: false,
-    };
+        this.state = {
+            showInstructors: false,
+        };
 
-    this.handleClick = this.handleClick.bind(this);
-  }
+        this.handleClick = this.handleClick.bind(this);
+    }
 
-  handleClick() {
-    this.setState((prevState) => {
-      return {showInstructors: !prevState.showInstructors}
-    });
-  }
+    handleClick() {
+        this.setState((prevState) => {
+            return {
+                showInstructors: !prevState.showInstructors
+            }
+        });
+    }
 
-  render() {
-    if (this.state.showInstructors) {
-      return (
-        <div>
+    render() {
+        if (this.state.showInstructors) {
+            return (
+                <div>
           <a onClick={this.handleClick}>{this.props.courseName}</a>
           {
             this.props.instructors.map(function(instructor, i) {
@@ -60,26 +64,28 @@ class CourseInstructorList extends React.Component {
             }.bind(this))
           }
         </div>
-      )
-    } else {
-      return (
-        <div>
+            )
+        } else {
+            return (
+                <div>
           <a onClick={this.handleClick}>{this.props.courseName}</a>
         </div>
-      )
+            )
+        }
     }
-  }
 }
 
 class Instructor extends React.Component {
-  render() {
-    var style= {};
-    if (!this.props.instructor.active) {
-      style = {"textDecoration": "line-through"}
-    }
+    render() {
+        var style = {};
+        if (!this.props.instructor.active) {
+            style = {
+                "textDecoration": "line-through"
+            }
+        }
 
-    return (
-      <div>
+        return (
+            <div>
         <a
           onClick={() => this.props.handleClick(this.props.instructor)}
           style={style}
@@ -87,6 +93,6 @@ class Instructor extends React.Component {
           {this.props.instructor.name}
         </a>
       </div>
-    )
-  }
+        )
+    }
 }

@@ -1,15 +1,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import { FlatCourse } from '../../common'
+import {
+    FlatCourse
+} from '../../common'
 
 export default class CourseLock extends React.Component {
-  constructor() {
-      super()
-  }
-  render() {
-    return (
-      <div className="cell grid-y courseHolder"
+    constructor() {
+        super()
+    }
+    render() {
+        return (
+            <div className="cell grid-y courseHolder"
         style={{
           "display": "flex",
           "alignItems": "center",
@@ -37,51 +39,53 @@ export default class CourseLock extends React.Component {
           }.bind(this)()
         }
       </div>
-    )
-  }
+        )
+    }
 }
 
 CourseLock.propTypes = {
     courseIndex: PropTypes.number,
-    course:      PropTypes.instanceOf(FlatCourse),
-    lockedIn:    PropTypes.arrayOf(PropTypes.number)
+    course: PropTypes.instanceOf(FlatCourse),
+    lockedIn: PropTypes.arrayOf(PropTypes.number)
 }
 
 class AltClass extends React.Component {
-  constructor(props) {
-    super(props);
+    constructor(props) {
+        super(props);
 
-    this.state = {
-      showClass: false,
-    };
+        this.state = {
+            showClass: false,
+        };
 
-    this.handleClick = this.handleClick.bind(this);
-  }
+        this.handleClick = this.handleClick.bind(this);
+    }
 
-  handleClick() {
-    this.setState((prevState) => {
-      return {showClass: !prevState.showClass}
-    });
-  }
+    handleClick() {
+        this.setState((prevState) => {
+            return {
+                showClass: !prevState.showClass
+            }
+        });
+    }
 
-  render() {
-    if (this.state.showClass) {
-      return (
-        <div>
+    render() {
+        if (this.state.showClass) {
+            return (
+                <div>
           <a onClick={this.handleClick}>{this.props.crn}</a>
         </div>
-      )
-    } else {
-      return (
-        <div>
+            )
+        } else {
+            return (
+                <div>
           <a onClick={this.handleClick}>{this.props.instructor}</a>
         </div>
-      )
+            )
+        }
     }
-  }
 }
 
 AltClass.propTypes = {
-    crn:        PropTypes.number,
+    crn: PropTypes.number,
     instructor: PropTypes.string
 }

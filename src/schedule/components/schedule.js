@@ -4,59 +4,61 @@ import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
 
 import {
-  Foundation,
-  Button as ReactButton
+    Foundation,
+    Button as ReactButton
 } from 'react-foundation';
 
 import CourseSelector from './containers/courseSelectorContainer';
 import Filters from './containers/filterContainer';
 import Calendar from './calendar';
 import CourseList from './containers/courseList';
-import { FlatCourse } from '../../common'
+import {
+    FlatCourse
+} from '../../common'
 
 export default class Schedule extends React.Component {
-  constructor(props) {
-    super(props);
+    constructor(props) {
+        super(props);
 
-    this.state = {
-        showCourseSelector: false
-    };
+        this.state = {
+            showCourseSelector: false
+        };
 
-    this.handleClassAddition = this.handleClassAddition.bind(this);
-}
-  handleClassAddition() {
-    this.setState((prevState) => {
-      return {
-        showCourseSelector: !prevState.showCourseSelector
-      }
-    })
-  }
-
-  render() {
-    let apppliedCombos = [];
-    if (this.props.courses.length > this.props.selectedCourse) {
-        apppliedCombos = this.props.courses[this.props.selectedCourse].classes.map((c) => c[0])
-    } else if (this.props.combos.length > this.props.schedIndex) {
-      apppliedCombos = applyComboToClasses(this.props.courses, this.props.combos[this.props.schedIndex])
-      console.log(this.props.combos[this.props.schedIndex])
+        this.handleClassAddition = this.handleClassAddition.bind(this);
+    }
+    handleClassAddition() {
+        this.setState((prevState) => {
+            return {
+                showCourseSelector: !prevState.showCourseSelector
+            }
+        })
     }
 
-    let courseSelector = null;
-    if (this.state.showCourseSelector) {
-      courseSelector = (
-        <div className="grid-x grid-margin-x">
+    render() {
+        let apppliedCombos = [];
+        if (this.props.courses.length > this.props.selectedCourse) {
+            apppliedCombos = this.props.courses[this.props.selectedCourse].classes.map((c) => c[0])
+        } else if (this.props.combos.length > this.props.schedIndex) {
+            apppliedCombos = applyComboToClasses(this.props.courses, this.props.combos[this.props.schedIndex])
+            console.log(this.props.combos[this.props.schedIndex])
+        }
+
+        let courseSelector = null;
+        if (this.state.showCourseSelector) {
+            courseSelector = (
+                <div className="grid-x grid-margin-x">
           <hr className="cell small-centered small-12"/>
           <div className="cell courses_table small-12">
             <CourseSelector />,
           </div>
         </div>
-      )
-    } else {
-      courseSelector = (<div></div>)
-    }
+            )
+        } else {
+            courseSelector = (<div></div>)
+        }
 
-    return (
-      <div className="grid-container">
+        return (
+            <div className="grid-container">
 
         <CourseList />
         <div
@@ -119,29 +121,29 @@ export default class Schedule extends React.Component {
           <Filters className="cell small-12 small-order-3 large-3 large-order-3" />
         </div>
       </div>
-    )
-  }
+        )
+    }
 }
 
 Schedule.propTypes = {
-    schedCount:      PropTypes.number,
-    classes:         PropTypes.arrayOf(PropTypes.instanceOf(FlatCourse)),
-    combos:          PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)),
-    schedIndex:      PropTypes.number,
-    lockedIn:        PropTypes.arrayOf(PropTypes.number),
+    schedCount: PropTypes.number,
+    classes: PropTypes.arrayOf(PropTypes.instanceOf(FlatCourse)),
+    combos: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)),
+    schedIndex: PropTypes.number,
+    lockedIn: PropTypes.arrayOf(PropTypes.number),
 
 }
 
 export function applyComboToClasses(classes, combo) {
-  return combo.map((combo_index, course_index) => {
-    if (combo_index < 1) {
-      return null
-    } else {
-      // we only need the a single class from each course time, so we can just
-      // use the first one
-      return Object.assign(classes[course_index].classes[combo_index - 1][0], {
-        title: classes[course_index].title
-      })
-    }
-  }).filter((x) => x != null)
+    return combo.map((combo_index, course_index) => {
+        if (combo_index < 1) {
+            return null
+        } else {
+            // we only need the a single class from each course time, so we can just
+            // use the first one
+            return Object.assign(classes[course_index].classes[combo_index - 1][0], {
+                title: classes[course_index].title
+            })
+        }
+    }).filter((x) => x != null)
 }
