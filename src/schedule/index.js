@@ -12,23 +12,13 @@ import {
 import fetchCourses from './actions/fetchCourses'
 
 const mapStateToProps = (state) => {
-    //  if (typeof state.courseSchedules == "undefined") {
-    //    return {
-    //      schedCount: 0,
-    //      courses: [],
-    //      combos:  [],
-    //      schedIndex: 0,
-    //      lockedIn: [],
-    //      selectedCourses: Array.from(state.selectedCourses),
-    //    }
-    //  }
-
     return {
         schedCount: state.courseSchedules.scheds.currentValidScheds.length,
         schedIndex: state.courseSchedules.scheds.schedIndex,
         courses: state.courseSchedules.flat_courses,
         combos: state.courseSchedules.scheds.currentValidScheds,
-        lockedIn: state.courseSchedules.schedFilters.lockedIn.lockedInList,
+        lockedIn: state.courseSchedules.schedFilters.lockedInList,
+        previewCourseIndex: state.courseSchedules.schedFilters.previewCourseIndex
     }
 }
 

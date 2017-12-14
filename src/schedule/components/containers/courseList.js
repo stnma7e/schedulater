@@ -2,7 +2,7 @@ import {
     connect
 } from 'react-redux'
 import {
-    setSelectedCourse
+    setpreviewCourse
 } from '../../reducers/courses'
 
 import CourseList from '../courseList'
@@ -17,14 +17,14 @@ const mapStateToProps = (state) => {
 
     return {
         courses: state.courseSchedules.flat_courses,
-        lockedIn: state.courseSchedules.schedFilters.lockedIn.lockedInList,
+        lockedIn: state.courseSchedules.schedFilters.lockedInList,
     }
 }
 
 const mapDispatchToProps = (dispatch) => {
     return {
         setSelectedCourse: (newIndex) => {
-            dispatch(setSelectedCourse(newIndex))
+            dispatch(setpreviewCourse(newIndex))
         }
     }
 }

@@ -12,16 +12,8 @@ const courseSchedules = (state = {
         schedIndex: 0
     },
     schedFilters: {
-        selectedCourseIndex: null,
-        selectedCourse: (x) => {
-            return true
-        },
-        lockedIn: {
-            validScheds: (x) => {
-                return true
-            },
-            lockedInList: []
-        }
+        previewCourseIndex: null,
+        lockedInList: []
     }
 }, action) => {
     switch (action.type) {
@@ -36,11 +28,9 @@ const courseSchedules = (state = {
                     schedIndex: 0
                 },
                 schedFilters: Object.assign({}, state.schedFilters, {
-                    lockedIn: Object.assign({}, state.schedFilters.lockedIn, {
-                        lockedInList: Array.apply(null,
-                                Array(action.courses.flat_courses.length))
-                            .map(Number.prototype.valueOf, 0)
-                    })
+                    lockedInList: Array.apply(null,
+                            Array(action.courses.flat_courses.length))
+                        .map(Number.prototype.valueOf, 0)
                 })
             })
         case 'SET_SCHED_INDEX':
@@ -50,55 +40,36 @@ const courseSchedules = (state = {
                 })
             })
 
-            // one of the filters to our schedules has been changed
-            // re-evaluate currentValidScheds
-        case 'SET_SELECTED_COURSE':
-        case 'LOCK_COURSE_INDEX':
-            let filters = filterScheds(state, action)
-            let validScheds = state.scheds.allValidScheds
-                .filter(filters.selectedCourse)
-                .filter(filters.lockedIn.validScheds)
-            console.log(validScheds)
-            let currentSched = state.scheds.currentValidScheds[state.scheds.schedIndex];
-
-            return Object.assign({}, state, {
-                schedFilters: filters,
-                scheds: Object.assign({}, state.scheds, {
-                    currentValidScheds: validScheds,
-                    schedIndex: Math.max(validScheds.findIndex((x) => x == currentSched), 0)
-                })
-            })
-        default:
-            return state
-    }
-}
-export default courseSchedules
-
-const filterScheds = (state, action) => {
-    switch (action.type) {
-        case "SET_SELECTED_COURSE":
-            if (action.newIndex == null) {
-                return Object.assign({}, state.schedFilters, {
-                    selectedCourseIndex: action.newIndex,
-                    selectedCourse: (x) => {
-                        return true
-                    }
-                })
-            } else if (action.newIndex == state.schedFilters.selectedCourseIndex) {
-                return Object.assign({}, state.schedFilters, {
-                    selectedCourseIndex: null,
-                    selectedCourse: (x) => {
-                        return true
-                    }
+        case 'SET_PREVIEW_COURSE':
+            if (action.newIndex == null ||
+                action.newIndex == state.schedFilters.previewCourseIndex)
+            {
+                return Object.assign({}, state, {
+                    schedFilters: Object.assign({}, state.schedFilters, {
+                        previewCourseIndex: null,
+                    }),
+                    scheds: getScheds(state)
                 })
             }
 
-            return Object.assign({}, state.schedFilters, {
-                selectedCourseIndex: action.newIndex,
-                selectedCourse: (combo) => {
-                    return combo[action.newIndex] > 0
-                }
+            let totalSections = state.flat_courses[action.newIndex].classes.length
+            let newCombos = [];
+            for (var i = 1; i <= totalSections; i++) {
+                let newCombo = Array.apply(null, Array(state.flat_courses.length)).map(Number.prototype.valueOf, 0)
+                newCombo[action.newIndex] = i
+                newCombos.push(newCombo)
+            }
+
+            return Object.assign({}, state, {
+                schedFilters: Object.assign({}, state.schedFilters, {
+                    previewCourseIndex: action.newIndex,
+                }),
+                scheds: Object.assign({}, state.scheds, {
+                    currentValidScheds: newCombos,
+                    schedIndex: 0
+                })
             })
+
         case 'LOCK_COURSE_INDEX':
             let course_index, class_index = 0;
             for (var i = 0; i < state.flat_courses.length; i++) {
@@ -113,7 +84,7 @@ const filterScheds = (state, action) => {
                 }
             }
 
-            let newLockedIn = state.schedFilters.lockedIn.lockedInList.map((combo_index, idx) => {
+            let newLockedIn = state.schedFilters.lockedInList.map((combo_index, idx) => {
                 if (idx == course_index) {
                     if (combo_index == class_index) {
                         return 0
@@ -125,28 +96,46 @@ const filterScheds = (state, action) => {
                 }
             })
 
-            console.log("NLL: " + newLockedIn)
+            console.log("lockedIn: " + newLockedIn)
 
-            return Object.assign({}, state.schedFilters, {
-                lockedIn: {
-                    lockedInList: newLockedIn,
-                    validScheds: (combo, idx) => {
-                        for (var i = 0; i < combo.length; i++) {
-                            if (newLockedIn[i] == 0) {
-                                continue
-                            }
-                            if (combo[i] != newLockedIn[i]) {
-                                return false
-                            }
-                        }
-
-                        return true
-                    }
-                }
+            let newFilterState = Object.assign({}, state, {
+                schedFilters: Object.assign({}, state.schedFilters, {
+                    lockedInList: newLockedIn
+                })
             })
+
+            return Object.assign({}, newFilterState, {
+                scheds: getScheds(newFilterState)
+            })
+
         default:
-            return state.schedFilters
+            return state
     }
+}
+export default courseSchedules
+
+const getScheds = (state) => {
+    let validScheds = state.scheds.allValidScheds
+        .filter((combo, idx) => {
+            for (var i = 0; i < combo.length; i++) {
+                if (state.schedFilters.lockedInList[i] == 0) {
+                    continue
+                }
+                if (combo[i] != state.schedFilters.lockedInList[i]) {
+                    return false
+                }
+            }
+
+            return true
+        })
+    //console.log(validScheds)
+    let currentSched = state.scheds.currentValidScheds[state.scheds.schedIndex];
+
+    return Object.assign({}, state.scheds, {
+        currentValidScheds: validScheds,
+        schedIndex: Math.max(validScheds.findIndex((x) => x == currentSched), 0)
+    })
+
 }
 
 export const lockCourseIndex = (course, crn) => {
@@ -164,9 +153,9 @@ export const setSchedIndex = (newIndex) => {
     }
 }
 
-export const setSelectedCourse = (courseIndex) => {
+export const setpreviewCourse = (courseIndex) => {
     return {
-        type: "SET_SELECTED_COURSE",
+        type: "SET_PREVIEW_COURSE",
         newIndex: courseIndex
     }
 }

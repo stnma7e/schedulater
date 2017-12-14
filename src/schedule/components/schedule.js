@@ -35,11 +35,9 @@ export default class Schedule extends React.Component {
     }
 
     render() {
-        let apppliedCombos = [];
-        if (this.props.courses.length > this.props.selectedCourse) {
-            apppliedCombos = this.props.courses[this.props.selectedCourse].classes.map((c) => c[0])
-        } else if (this.props.combos.length > this.props.schedIndex) {
-            apppliedCombos = applyComboToClasses(this.props.courses, this.props.combos[this.props.schedIndex])
+        let appliedCombos = [];
+        if (this.props.combos.length > this.props.schedIndex) {
+            appliedCombos = applyComboToClasses(this.props.courses, this.props.combos[this.props.schedIndex])
             console.log(this.props.combos[this.props.schedIndex])
         }
 
@@ -47,11 +45,11 @@ export default class Schedule extends React.Component {
         if (this.state.showCourseSelector) {
             courseSelector = (
                 <div className="grid-x grid-margin-x">
-          <hr className="cell small-centered small-12"/>
-          <div className="cell courses_table small-12">
-            <CourseSelector />,
-          </div>
-        </div>
+                    <hr className="cell small-centered small-12"/>
+                    <div className="cell courses_table small-12">
+                        <CourseSelector />,
+                    </div>
+                </div>
             )
         } else {
             courseSelector = (<div></div>)
@@ -59,68 +57,64 @@ export default class Schedule extends React.Component {
 
         return (
             <div className="grid-container">
+                <CourseList />
+                <div
+                    onClick={this.handleClassAddition}
+                    className="cell courseHolder"
+                    id="addCourseButton"
+                    style={{ "fontSize": "8em" }}
+                    dangerouslySetInnerHTML={{__html: '&CirclePlus;'}}
+                ></div>
 
-        <CourseList />
-        <div
-          onClick={this.handleClassAddition}
-          className="cell courseHolder"
-          id="addCourseButton"
-          style={{ "fontSize": "8em" }}
-          dangerouslySetInnerHTML={{__html: '&CirclePlus;'}}
-        >
-        </div>
+                {courseSelector}
 
-        {courseSelector}
+                <div id="calendar_row" className="grid-x grid-padding-x grid-padding-y">
+                    <div className="cell small-12 large-9 small-order-1 large-order-1">
+                        <Calendar
+                            className="grid-x"
+                            classes={appliedCombos}
+                            lockCourseIndex={this.props.lockCourseIndex}
+                        />
+                        <div className="grid-x grid-padding-x small-order-2 large-order-2">
+                            <div className="cell small-3 scheduleInfo">
+                                <p>
+                                    <strong>Current Schedule:</strong> {this.props.schedIndex + 1}
+                                </p>
+                                <p>
+                                    <strong>Total Available Schedules:</strong> {this.props.combos.length}
+                                </p>
+                            </div>
+                            <div className="cell small-4">
+                                <ReactButton
+                                        className='sched_button cell small-12'
+                                        onClick={this.props.setSchedIndex(false, this.props.schedIndex, this.props.schedCount)}>
+                                    Previous Schedule
+                                </ReactButton>
+                            </div>
+                            <div className="cell small-4">
+                                <ReactButton
+                                        className='sched_button cell small-12'
+                                        onClick={this.props.setSchedIndex(true, this.props.schedIndex, this.props.schedCount)}>
+                                    Next Schedule
+                                </ReactButton>
+                            </div>
+                            <div className="cell small-1">
+                                <ReactButton
+                                    className='sched_button cell small-12'
+                                    onClick={this.props.requestCourses}>&#x21bb;</ReactButton>
+                            </div>
+                        </div>
+                        <div className="grid-x grid-margin-x small-order-4">
+                            <hr className="cell small-centered small-12" />
+                            <div className="cell courses_table small-12">
+                                <CourseSelector/>
+                            </div>
+                        </div>
+                    </div>
 
-        <div id="calendar_row" className="grid-x grid-padding-x grid-padding-y">
-          <div className="cell small-12 large-9 small-order-1 large-order-1">
-            <Calendar
-              className="grid-x"
-              classes={apppliedCombos}
-              lockCourseIndex={this.props.lockCourseIndex}
-            />
-
-            <div className="grid-x grid-padding-x small-order-2 large-order-2">
-              <div className="cell small-3 scheduleInfo">
-                <p>
-                  <strong>Current Schedule:</strong> {this.props.schedIndex + 1}
-                </p>
-                <p>
-                  <strong>Total Available Schedules:</strong> {this.props.combos.length}
-                </p>
-              </div>
-              <div className="cell small-4">
-                <ReactButton
-                    className='sched_button cell small-12'
-                    onClick={this.props.setSchedIndex(false, this.props.schedIndex, this.props.schedCount)}
-                >
-                    Previous Schedule
-                </ReactButton>
-              </div>
-              <div className="cell small-4">
-                <ReactButton
-                    className='sched_button cell small-12'
-                    onClick={this.props.setSchedIndex(true, this.props.schedIndex, this.props.schedCount)}
-                >
-                    Next Schedule
-                </ReactButton>
-              </div>
-              <div className="cell small-1">
-                <ReactButton className='sched_button cell small-12' onClick={this.props.requestCourses}>&#x21bb;</ReactButton>
-              </div>
+                    <Filters className="cell small-12 small-order-3 large-3 large-order-3" />
+                </div>
             </div>
-
-            <div className="grid-x grid-margin-x small-order-4">
-              <hr className="cell small-centered small-12"/>
-              <div className="cell courses_table small-12">
-                <CourseSelector/>
-              </div>
-            </div>
-          </div>
-
-          <Filters className="cell small-12 small-order-3 large-3 large-order-3" />
-        </div>
-      </div>
         )
     }
 }
