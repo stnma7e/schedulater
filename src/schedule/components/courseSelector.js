@@ -11,6 +11,59 @@ import {
 } from 'datatables.net-select';
 
 export default class CourseSelector extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            showCourseSelector: false
+        };
+
+        this.handleClassAddition = this.handleClassAddition.bind(this);
+    }
+
+    handleClassAddition() {
+        this.setState((prevState) => {
+            return {
+                showCourseSelector: !prevState.showCourseSelector
+            }
+        })
+    }
+
+    render() {
+        let courseSelector = null;
+        if (this.state.showCourseSelector) {
+            courseSelector = (
+                <div className="grid-x grid-margin-x">
+                    <hr className="cell small-centered small-12"/>
+                    <div className="cell courses_table small-12">
+                        <CourseTable
+                            addClasses={this.props.addClasses}
+                            removeClasses={this.props.removeClasses}
+                        />,
+                    </div>
+                </div>
+            )
+        } else {
+            courseSelector = (<div></div>)
+        }
+
+        return (
+            <div>
+                <div
+                    onClick={this.handleClassAddition}
+                    className="cell courseHolder"
+                    id="addCourseButton"
+                    style={{ "fontSize": "8em" }}
+                    dangerouslySetInnerHTML={{__html: '&CirclePlus;'}}
+                ></div>
+
+                {courseSelector}
+            </div>
+        )
+    }
+}
+
+class CourseTable extends React.Component {
     constructor() {
         super();
 

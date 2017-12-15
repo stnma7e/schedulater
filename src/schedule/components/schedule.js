@@ -17,23 +17,6 @@ import {
 } from '../../common'
 
 export default class Schedule extends React.Component {
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            showCourseSelector: false
-        };
-
-        this.handleClassAddition = this.handleClassAddition.bind(this);
-    }
-    handleClassAddition() {
-        this.setState((prevState) => {
-            return {
-                showCourseSelector: !prevState.showCourseSelector
-            }
-        })
-    }
-
     render() {
         let appliedCombos = [];
         if (this.props.combos.length > this.props.schedIndex) {
@@ -41,32 +24,10 @@ export default class Schedule extends React.Component {
             console.log(this.props.combos[this.props.schedIndex])
         }
 
-        let courseSelector = null;
-        if (this.state.showCourseSelector) {
-            courseSelector = (
-                <div className="grid-x grid-margin-x">
-                    <hr className="cell small-centered small-12"/>
-                    <div className="cell courses_table small-12">
-                        <CourseSelector />,
-                    </div>
-                </div>
-            )
-        } else {
-            courseSelector = (<div></div>)
-        }
-
         return (
             <div className="grid-container">
                 <CourseList />
-                <div
-                    onClick={this.handleClassAddition}
-                    className="cell courseHolder"
-                    id="addCourseButton"
-                    style={{ "fontSize": "8em" }}
-                    dangerouslySetInnerHTML={{__html: '&CirclePlus;'}}
-                ></div>
-
-                {courseSelector}
+                <CourseSelector />
 
                 <div id="calendar_row" className="grid-x grid-padding-x grid-padding-y">
                     <div className="cell small-12 large-9 small-order-1 large-order-1">
@@ -102,12 +63,6 @@ export default class Schedule extends React.Component {
                                 <ReactButton
                                     className='sched_button cell small-12'
                                     onClick={this.props.requestCourses}>&#x21bb;</ReactButton>
-                            </div>
-                        </div>
-                        <div className="grid-x grid-margin-x small-order-4">
-                            <hr className="cell small-centered small-12" />
-                            <div className="cell courses_table small-12">
-                                <CourseSelector/>
                             </div>
                         </div>
                     </div>
