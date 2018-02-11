@@ -11,15 +11,27 @@ import {
     removeCourse,
     removeAllCourses
 } from '../../reducers/scheduledCourses'
+import { requestCourseNames } from '../../reducers/courses.js'
 import fetchCourses from '../../actions/fetchCourses'
 import CourseSelector from '../courseSelector'
 
 const mapStateToProps = (state) => {
-    return {}
+    return {
+        subjects: state.courseSchedules.subjectNames
+    }
 }
 
 const mapDispatchToProps = (dispatch) => {
     return {
+        requestCourseNames: () => {
+            dispatch(requestCourseNames())
+        },
+        addCourse: (courseName) => {
+            dispatch(addCourse(courseName))
+        },
+        removeCourse: (courseName) => {
+            dispatch(removeCourse(courseName))
+        },
         toggleClassesHaveUpdated: () => {
             dispatch(toggleClassesHaveUpdated())
         },

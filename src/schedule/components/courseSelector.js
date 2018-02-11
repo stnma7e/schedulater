@@ -1,24 +1,23 @@
 import React from 'react';
-
-import {
-    DataTable
-} from 'datatables.net';
-import {
-    Button
-} from 'datatables.net-buttons-zf';
-import {
-    Select
-} from 'datatables.net-select';
+import { DataTable } from 'datatables.net';
+import { Button } from 'datatables.net-buttons-zf';
+import { Select } from 'datatables.net-select';
+import RSelect from 'react-select';
 
 export default class CourseSelector extends React.Component {
     constructor(props) {
         super(props);
 
         this.state = {
-            showCourseSelector: false
+            showCourseSelector: false,
+            selectedCourse: new Set()
         };
 
         this.handleClassAddition = this.handleClassAddition.bind(this);
+    }
+
+    componentDidMount() {
+        this.props.requestCourseNames()
     }
 
     handleClassAddition() {
@@ -30,35 +29,33 @@ export default class CourseSelector extends React.Component {
     }
 
     render() {
-        let courseSelector = null;
-        if (this.state.showCourseSelector) {
-            courseSelector = (
-                <div className="grid-x grid-margin-x">
-                    <hr className="cell small-centered small-12"/>
-                    <div className="cell courses_table small-12">
-                        <CourseTable
-                            addClasses={this.props.addClasses}
-                            removeClasses={this.props.removeClasses}
-                        />,
-                    </div>
-                </div>
-            )
-        } else {
-            courseSelector = (<div></div>)
-        }
-
         return (
-            <div>
-                <div
-                    onClick={this.handleClassAddition}
-                    className="cell courseHolder"
-                    id="addCourseButton"
-                    style={{ "fontSize": "8em" }}
-                    dangerouslySetInnerHTML={{__html: '&CirclePlus;'}}
-                ></div>
+            <RSelect
+                name="Subjects"
+                value={this.state.selectedCourse.values().next().label}
+                onChange={(newOption) => {this.setState((prevState) => {
+                    let newSet = new Set(prevState.selectedCourse)
+                    if (newSet.has(newOption.value)) {
+                        newSet.delete(newOption.value)
+                        this.props.addCourse(newOption.value)
+                    } else {
+                        newSet.add(newOption.value)
+                        this.props.addCourse(newOption.value)
+                    }
 
-                {courseSelector}
-            </div>
+                    return Object.assign({}, prevState, {
+                        selectedCourse: newSet
+                    }
+                )}, () => {
+                        console.log(this.state.selectedCourse)
+                })}}
+                options={this.props.subjects.map((subject, i) => {
+                    return {
+                        value: subject,
+                        label: subject
+                    }
+                })}
+            />
         )
     }
 }

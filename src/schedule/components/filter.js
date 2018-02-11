@@ -33,15 +33,15 @@ export class Filter extends React.Component {
     render() {
         return (
             <div className="filterBlock cell">
-        <div className="card">
-          <div className="card-divider">
-            <h6>{this.props.filterType}</h6>
-          </div>
-          <div className="card-section">
-            {this.props.children}
-          </div>
-        </div>
-      </div>
+                <div className="card">
+                    <div className="card-divider">
+                        <h6>{this.props.filterType}</h6>
+                    </div>
+                    <div className="card-section">
+                        {this.props.children}
+                    </div>
+                </div>
+            </div>
         )
     }
 }
@@ -52,7 +52,7 @@ export default class AllFilters extends React.Component {
             <div id="filters" className={this.props.className}>
         <h5>Filters:</h5>
         <hr/>
-        <div className="grid-x grid-padding-x small-up-3 large-up-1">
+        <div className="grid-x grid-padding-x small-up-3 large-up-3">
 
 
           <Filter filterType="Time">

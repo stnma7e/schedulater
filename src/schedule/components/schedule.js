@@ -2,19 +2,15 @@ import $ from 'jquery';
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactDOM from 'react-dom';
-
 import {
     Foundation,
     Button as ReactButton
 } from 'react-foundation';
-
 import CourseSelector from './containers/courseSelectorContainer';
 import Filters from './containers/filterContainer';
 import Calendar from './calendar';
 import CourseList from './containers/courseList';
-import {
-    FlatCourse
-} from '../../common'
+import { FlatCourse } from '../../common';
 
 export default class Schedule extends React.Component {
     render() {
@@ -26,11 +22,8 @@ export default class Schedule extends React.Component {
 
         return (
             <div className="grid-container">
-                <CourseList />
-                <CourseSelector />
-
                 <div id="calendar_row" className="grid-x grid-padding-x grid-padding-y">
-                    <div className="cell small-12 large-9 small-order-1 large-order-1">
+                    <div className="cell small-12 large-8 small-order-1 large-order-1">
                         <Calendar
                             className="grid-x"
                             classes={appliedCombos}
@@ -66,9 +59,13 @@ export default class Schedule extends React.Component {
                             </div>
                         </div>
                     </div>
-
-                    <Filters className="cell small-12 small-order-3 large-3 large-order-3" />
+                        <div className="cell small-12 large-4 large-order-2 small-order-2">
+                            <CourseSelector />
+                            <CourseList />
+                        </div>
                 </div>
+
+                <Filters className="cell small-12 small-order-3 large-3 large-order-3" />
             </div>
         )
     }

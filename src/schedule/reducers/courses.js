@@ -14,9 +14,14 @@ const courseSchedules = (state = {
     schedFilters: {
         previewCourseIndex: null,
         lockedInList: []
-    }
+    },
+    subjectNames: []
 }, action) => {
     switch (action.type) {
+        case 'SAVE_COURSE_NAMES':
+            return Object.assign({}, state, {
+                subjectNames: action.courseNames
+            })
         case 'RECEIVE_COURSES':
             // replace the current state with the network input
             return Object.assign({}, state, action.courses, {
@@ -157,5 +162,26 @@ export const setpreviewCourse = (courseIndex) => {
     return {
         type: "SET_PREVIEW_COURSE",
         newIndex: courseIndex
+    }
+}
+
+export const saveCourseNames = (courseNames) => {
+    return {
+        type: 'SAVE_COURSE_NAMES',
+        courseNames: courseNames
+    }
+}
+
+export const requestCourseNames = () => {
+    return function(dispatch, getState) {
+        return (
+            fetch('/subjects', {
+                method: 'GET',
+            })
+            .then(response => response.json())
+            .then(json => {
+                dispatch(saveCourseNames(json))
+            })
+        )
     }
 }

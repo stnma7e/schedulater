@@ -6,7 +6,7 @@ import CourseLock from './courseLock';
 export default class CourseList extends React.Component {
     render() {
         return (
-            <div className="cell grid-x grid-padding-x small-up-3 large-up-6">
+            <div className="cell grid-x grid-padding-x small-up-6 large-up-2">
             {this.props.courses.map((c, i) => {
               return (
                 <CourseLock key={i}
