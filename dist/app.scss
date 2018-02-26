@@ -1,18 +1,9 @@
-// @import "~foundation-sites/scss/foundation";
-// @include foundation-everything;
-
-//@import "~datatables.net-select-zf/css/select.foundation.css";
 //@import url('https://fonts.googleapis.com/css?family=Muli|Open+Sans|Quattrocento|Quattrocento+Sans|Raleway|Roboto');
 
-$site_font: 'Muli', regular;
-
-body {
-  font-family: $site_font;
-}
-
-#calendar_container {
-  margin-left: 2%;
-  margin-right: 2%;
+#calendar {
+    @import 'fullcalendar.min.css';
+    margin-left: 2%;
+    margin-right: 2%;
 }
 
 .sched_button {
@@ -42,10 +33,6 @@ body {
   margin:auto;
 }
 
-h5 h1 h6{
-  font-family: $site_font;
-}
-
 .filterBlock {
   text-align: center;
    .dropdown-pane {
@@ -53,15 +40,17 @@ h5 h1 h6{
    }
 }
 
-.courseHolder {
-  border-radius: 2px;
-  border: 2px;
-  height: 8em;
-  user-select: none;
-  -moz-user-select: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  text-align: center;
+.selectedCourseBox {
+    float:left;
+    border-radius: 2px;
+    border-style: solid;
+    border-width: 1px;
+    height: 8em;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    text-align: center;
 }
 .courseHolder#addCourseButton{
   fontSize: 8em;
@@ -71,3 +60,16 @@ h5 h1 h6{
   background-color: gray;
   cursor: pointer;
 }
+
+.subjectSelection {
+    overflow: auto;
+    max-height: 400px;
+    float: left;
+    width: 50%;
+}
+
+.schedButton {
+    float: left;
+}
+
+@import "~bulma";

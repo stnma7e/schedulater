@@ -1,8 +1,11 @@
 require("../dist/app.scss");
 
-import Schedule from './sched';
+import Calendar from './elm/calendar';
 import { Main } from '../elmsrc/Main.elm'
 
 $(document).ready(function() {
-    var cal = new Schedule()
+    var node = document.getElementById('main');
+    var app = Main.embed(node);
+
+    var cal = new Calendar(app.ports.sched)
 })
