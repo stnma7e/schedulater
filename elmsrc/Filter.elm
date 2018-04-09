@@ -6,8 +6,8 @@ import Json.Encode exposing (encode, object, list, string, int)
 import Course
 
 type alias TimeFilter =
-    { start: String
-    , end: String
+    { start: Int
+    , end: Int
     }
 
 type alias CreditFilter =
@@ -39,13 +39,13 @@ updateFilter msg requestFilters =
             let newCourses = if List.member course requestFilters.courses
                 then List.filter ((/=) course) requestFilters.courses
                 else course :: requestFilters.courses
-            in {requestFilters | courses = newCourses}
+            in { requestFilters | courses = newCourses }
 
         IncMaxHours ->
             let newHours = min 18 (requestFilters.creditFilter.max + 1)
                 newCreditFilter = requestFilters.creditFilter
-            in {requestFilters | creditFilter =
-                    {newCreditFilter | max = newHours
+            in { requestFilters | creditFilter =
+                    { newCreditFilter | max = newHours
                     }
                 }
 
@@ -53,8 +53,8 @@ updateFilter msg requestFilters =
             let newHours = max 1 (requestFilters.creditFilter.max - 1)
                 newCreditFilter = requestFilters.creditFilter
                 newRequestFilters =
-                    {requestFilters | creditFilter =
-                        {newCreditFilter  | max = newHours
+                    { requestFilters | creditFilter =
+                        { newCreditFilter  | max = newHours
                         }
                     }
             in if newHours < requestFilters.creditFilter.min
@@ -65,8 +65,8 @@ updateFilter msg requestFilters =
             let newHours = min 18 (requestFilters.creditFilter.min + 1)
                 newCreditFilter = requestFilters.creditFilter
                 newRequestFilters =
-                    {requestFilters | creditFilter =
-                        {newCreditFilter  | min = newHours
+                    { requestFilters | creditFilter =
+                        { newCreditFilter  | min = newHours
                         }
                     }
             in if newHours > requestFilters.creditFilter.max
@@ -76,7 +76,7 @@ updateFilter msg requestFilters =
         DecMinHours ->
             let newHours = max 1 (requestFilters.creditFilter.min - 1)
                 newCreditFilter = requestFilters.creditFilter
-            in {requestFilters | creditFilter =
+            in { requestFilters | creditFilter =
                     { newCreditFilter  | min = newHours
                     }
                 }
@@ -85,8 +85,8 @@ encodeScheduleRequest : ScheduleRequest -> String
 encodeScheduleRequest sr = encode 0 <| object
     [ ("courses", list <| List.map string sr.courses)
     , ("time_filter", object
-        [ ("start", string sr.timeFilter.start)
-        , ("end", string sr.timeFilter.end)
+        [ ("start", int sr.timeFilter.start)
+        , ("end", int sr.timeFilter.end)
         ])
     , ("credit_filter", object
         [ ("min_hours", int sr.creditFilter.min)
@@ -101,8 +101,8 @@ encodeScheduleRequest sr = encode 0 <| object
 defaultBody =
     { courses = ["SURVEY OF CHEMISTRY I","SURVEY OF CHEMISTRY II","CHEM I CONCEPT DEVELOPMENT","PRINCIPLES OF CHEMISTRY I","PRINCIPLES OF CHEMISTRY II","INTERMEDIATE ORG CHEM LAB I","ORGANIC CHEMISTRY I","ORGANIC CHEMISTRY PROBLEMS I","ORGANIC CHEMISTRY II"]
     , timeFilter =
-        { start = "08:00:00 GMT-0400 (EDT)"
-        , end = "19:00:00 GMT-0400 (EDT)"
+        { start = 8 * 60
+        , end = 19 * 60
         }
     , creditFilter =
         { min = 12
