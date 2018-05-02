@@ -1,4 +1,4 @@
-module Filter exposing (..)
+module RequestFilter exposing (..)
 
 import Dict exposing (Dict)
 import Json.Encode exposing (encode, object, list, string, int)
@@ -17,7 +17,7 @@ type alias CreditFilter =
 
 type alias InstructorFilter = Dict String String
 
-type FilterMsg
+type RequestFilterMsg
     = IncMaxHours
     | DecMaxHours
     | IncMinHours
@@ -32,8 +32,8 @@ type alias ScheduleRequest =
     }
 
 
-updateFilter : FilterMsg -> ScheduleRequest -> ScheduleRequest
-updateFilter msg requestFilters =
+update : RequestFilterMsg -> ScheduleRequest -> ScheduleRequest
+update msg requestFilters =
     case msg of
         AddCourse course ->
             let newCourses = if List.member course requestFilters.courses
@@ -58,7 +58,7 @@ updateFilter msg requestFilters =
                         }
                     }
             in if newHours < requestFilters.creditFilter.min
-                then updateFilter DecMinHours newRequestFilters
+                then update DecMinHours newRequestFilters
                 else newRequestFilters
 
         IncMinHours ->
@@ -70,7 +70,7 @@ updateFilter msg requestFilters =
                         }
                     }
             in if newHours > requestFilters.creditFilter.max
-                then updateFilter IncMaxHours newRequestFilters
+                then update IncMaxHours newRequestFilters
                 else newRequestFilters
 
         DecMinHours ->

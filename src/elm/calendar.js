@@ -1,7 +1,7 @@
 import fullCalendar from 'fullcalendar';
 
 export default class Calendar {
-    constructor(schedUpdateFunction) {
+    constructor(schedUpdateFunction, lockCourseIndex) {
         this.transform_event_data = this.transform_event_data.bind(this)
 
         this.class_colors = new Map()
@@ -40,7 +40,7 @@ export default class Calendar {
             },
             events: this.transform_event_data,
             eventClick: function(calEvent, jsEvent, view) {
-                this.props.lockCourseIndex(calEvent.title, calEvent.id)
+                lockCourseIndex(calEvent.id)
             }.bind(this)
         })
     }

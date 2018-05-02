@@ -5,10 +5,11 @@ import Array exposing (Array)
 import Json.Decode exposing (field, index, int, string, array, map2, map3, map5)
 import Maybe exposing (withDefault, andThen)
 
+type alias CourseIndex = Int
+type alias ClassIndex = Int
 type alias Sched = Array Int
 
 type alias Subject = String
-type alias Class = Array Section
 
 type alias Section =
     { crn: Int
@@ -17,6 +18,8 @@ type alias Section =
     , instructor: String
     , daytimes: String
     }
+
+type alias Class = Array Section
 
 type alias Course =
     { subject: Subject
@@ -41,6 +44,19 @@ type alias CourseTableData =
 extractCourses : Subject -> CourseData -> Array Course
 extractCourses sub cd = cd.courses
     |> Array.filter (\c -> c.subject == String.toUpper sub)
+
+findSection : Int -> CourseData -> Maybe (CourseIndex, ClassIndex)
+findSection crn cd = cd.courses
+    |> Array.indexedMap (\courseIdx course -> course.classes
+        |> Array.indexedMap (\sectionIdx sections -> case Array.get 0 sections of
+                (Just section) -> if section.crn == crn then Just sectionIdx else Nothing
+                Nothing -> Nothing )
+        |> Array.filter isJust
+        |> Array.foldl (\sectionIdx acc -> sectionIdx) Nothing
+        |> Maybe.map ((,) courseIdx)
+    )
+    |> Array.filter isJust
+    |> Array.foldl (\courseInfo acc -> courseInfo) Nothing
 
 decodeCourseData = map3 CourseData
     (field "sched_count" int)
@@ -82,3 +98,7 @@ makeSched courses comboIndex =
     in Array.indexedMap convertComboToClassList combo
         |> Array.toList
         |> List.filterMap identity
+
+isJust x = case x of
+    Just _  -> True
+    Nothing -> False
