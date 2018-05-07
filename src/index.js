@@ -7,5 +7,5 @@ $(document).ready(function() {
     var node = document.getElementById('main');
     var app = Main.embed(node);
 
-    var cal = new Calendar(app.ports.sched)
+    var cal = new Calendar(app.ports.sched, app.ports.lockSection)
 })

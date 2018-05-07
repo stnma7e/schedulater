@@ -120,6 +120,7 @@ view model =
                     , toString <| model.requestFilters
                     , toString <| model.renderFilters.selectedSubject
                     , toString <| model.renderFilters.courseList.schedCount
+                    , toString <| model.renderFilters.lockedClasses
                     ]
                 ]
             , div [class "column"]

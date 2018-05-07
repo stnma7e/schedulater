@@ -49,7 +49,10 @@ findSection : Int -> CourseData -> Maybe (CourseIndex, ClassIndex)
 findSection crn cd = cd.courses
     |> Array.indexedMap (\courseIdx course -> course.classes
         |> Array.indexedMap (\sectionIdx sections -> case Array.get 0 sections of
-                (Just section) -> if section.crn == crn then Just sectionIdx else Nothing
+            -- just choose the first section in that course's timeslot
+                (Just section) -> if section.crn == crn
+                    then Just (sectionIdx + 1) -- 0 index is reserved for inactive class
+                    else Nothing
                 Nothing -> Nothing )
         |> Array.filter isJust
         |> Array.foldl (\sectionIdx acc -> sectionIdx) Nothing

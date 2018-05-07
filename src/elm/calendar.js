@@ -40,7 +40,7 @@ export default class Calendar {
             },
             events: this.transform_event_data,
             eventClick: function(calEvent, jsEvent, view) {
-                lockCourseIndex(calEvent.id)
+                lockCourseIndex.send(calEvent.id);
             }.bind(this)
         })
     }
