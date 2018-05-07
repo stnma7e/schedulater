@@ -26,7 +26,6 @@ init =
     let model =
         { calendar = CalendarData 0
         , subjects = []
-        , coursesErr = ""
         , requestFilters = defaultBody
         , renderFilters = defaultRenderFilters
         }
@@ -43,7 +42,6 @@ type alias CalendarData =
 type alias Model =
     { calendar : CalendarData
     , subjects : List Subject
-    , coursesErr : String
     , requestFilters : ScheduleRequest
     , renderFilters : RenderFilter
     }
@@ -81,7 +79,8 @@ update msg model = case msg of
         ({ model | subjects = newSubjects}, Cmd.none)
 
     NewSubjects (Err e) ->
-        ({model | subjects = [toString e]}, Cmd.none)
+        let _ = log "ERROR (NewSubjects)" <| toString e
+        in (model, Cmd.none)
 
     NewScheds (Ok newScheds) ->
         let (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds))
@@ -89,7 +88,8 @@ update msg model = case msg of
             Cmd.batch [cmd, renderCurrentSched newModel])
 
     NewScheds (Err e) ->
-        ({model | coursesErr = toString e}, Cmd.none)
+        let _ = log "ERROR (NewScheds)" <| toString e
+        in (model, Cmd.none)
 
     RenderCurrentSched -> (model, renderCurrentSched model)
 
@@ -116,7 +116,6 @@ view model =
 
                 , div [] <| List.map (\x -> x |> toString |> text)
                     [ toString <| model.calendar.schedIndex
-                    , "err: " ++ (toString <| model.coursesErr)
                     , toString <| model.requestFilters
                     , toString <| model.renderFilters.selectedSubject
                     , toString <| model.renderFilters.courseList.schedCount

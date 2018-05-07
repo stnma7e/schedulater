@@ -14,7 +14,6 @@ type alias RenderFilter =
     , selectedSubject: Subject
     , selectedSubjectCourses: List CourseTableData
     , lockedClasses: Dict CourseIndex ClassIndex
-    , err: String
     }
 
 defaultRenderFilters =
@@ -24,7 +23,6 @@ defaultRenderFilters =
     , selectedSubject = ""
     , selectedSubjectCourses = []
     , lockedClasses = Dict.empty
-    , err = ""
     }
 
 type RenderFilterMsg
@@ -40,8 +38,9 @@ update msg rf = case msg of
     NewSubjectCourseList (Ok data) ->
         {rf | selectedSubjectCourses = data}
 
-    NewSubjectCourseList (Err _) ->
-        {rf | err = toString e}
+    NewSubjectCourseList (Err e) ->
+        let _ = log "ERROR (NewSubjectCourseList)" <| toString e
+        in rf
 
     SubjectSearchString f ->
         {rf | subjectSearchString = f}
@@ -76,11 +75,10 @@ update msg rf = case msg of
 
 updateCourses : RenderFilter -> RenderFilter
 updateCourses rf =
-    let newCombos = log "" rf.lockedClasses
+    let newCombos = rf.lockedClasses
         |> Dict.toList
         |> flip List.foldl rf.originalCombos (\(courseIdx, sectionIdx) combos ->
-            let x = log "" (courseIdx, sectionIdx)
-            in combos |> Array.filter (\combo -> case Array.get courseIdx combo of
+            combos |> Array.filter (\combo -> case Array.get courseIdx combo of
                 Just sectionIdx2 -> sectionIdx == sectionIdx2
                 Nothing -> False
             )
