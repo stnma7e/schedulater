@@ -1,7 +1,7 @@
 import fullCalendar from 'fullcalendar';
 
 export default class Calendar {
-    constructor(schedUpdateFunction, lockCourseIndex) {
+    constructor(divId, schedUpdateFunction, lockCourseIndex) {
         this.transform_event_data = this.transform_event_data.bind(this)
 
         this.class_colors = new Map()
@@ -15,7 +15,7 @@ export default class Calendar {
                 })
             })
 
-            $('#calendar').fullCalendar('refetchEvents');
+            $('#' + divId).fullCalendar('refetchEvents');
 
         });
 

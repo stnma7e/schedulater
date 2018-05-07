@@ -6,6 +6,7 @@ import { Main } from '../elmsrc/Main.elm'
 $(document).ready(function() {
     var node = document.getElementById('main');
     var app = Main.embed(node);
-
-    var cal = new Calendar(app.ports.sched, app.ports.lockSection)
+    new Promise(resolve => setTimeout(resolve, 50)).then(() => {
+        var cal = new Calendar("calendar", app.ports.sched, app.ports.lockSection);
+    });
 })

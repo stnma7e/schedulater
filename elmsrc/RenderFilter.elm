@@ -14,6 +14,7 @@ type alias RenderFilter =
     , selectedSubject: Subject
     , selectedSubjectCourses: List CourseTableData
     , lockedClasses: Dict CourseIndex ClassIndex
+    , mustUseCourses: List CourseIndex
     }
 
 defaultRenderFilters =
@@ -23,6 +24,7 @@ defaultRenderFilters =
     , selectedSubject = ""
     , selectedSubjectCourses = []
     , lockedClasses = Dict.empty
+    , mustUseCourses = []
     }
 
 type RenderFilterMsg
@@ -32,6 +34,7 @@ type RenderFilterMsg
     | LockSection Int
     | NewSubjectCourseList (Result Http.Error (List CourseTableData))
     | NewCourses CourseData
+    | MustUseCourse String
 
 update : RenderFilterMsg -> RenderFilter -> RenderFilter
 update msg rf = case msg of
@@ -46,7 +49,7 @@ update msg rf = case msg of
         {rf | subjectSearchString = f}
 
     SelectCourseSubject s ->
-        {rf | selectedSubject = s}
+        {rf | selectedSubject = s, subjectSearchString = ""}
 
     DeselectCourseSubject ->
         {rf | selectedSubject = ""
@@ -57,6 +60,16 @@ update msg rf = case msg of
             , originalCombos = courses.combos
             , lockedClasses = Dict.empty}
             |> updateCourses
+
+    MustUseCourse courseTitle ->
+        case findCourse courseTitle rf.courseList of
+            Nothing -> log "courseTitle not found" rf
+            Just courseIdx ->
+                let newMustUseCourses = if List.member courseIdx rf.mustUseCourses
+                    then List.filter ((/=) courseIdx) rf.mustUseCourses
+                    else courseIdx :: rf.mustUseCourses
+                in { rf | mustUseCourses = newMustUseCourses }
+                    |> updateCourses
 
     -- only show schedules that include a certain crn
     LockSection crn -> case findSection crn rf.courseList of
@@ -75,14 +88,20 @@ update msg rf = case msg of
 
 updateCourses : RenderFilter -> RenderFilter
 updateCourses rf =
-    let newCombos = rf.lockedClasses
-        |> Dict.toList
-        |> flip List.foldl rf.originalCombos (\(courseIdx, sectionIdx) combos ->
-            combos |> Array.filter (\combo -> case Array.get courseIdx combo of
-                Just sectionIdx2 -> sectionIdx == sectionIdx2
-                Nothing -> False
-            )
-        )
+    let newCombos1 = rf.lockedClasses
+            |> Dict.toList
+            |> flip List.foldl rf.originalCombos (\(courseIdx, sectionIdx) combos ->
+                combos |> Array.filter (\combo -> case Array.get courseIdx combo of
+                    Just sectionIdx2 -> sectionIdx == sectionIdx2
+                    Nothing -> False
+                ))
+        newCombos = rf.mustUseCourses
+            |> flip List.foldl newCombos1 (\courseIdx combos ->
+                combos |> Array.filter (\combo -> case Array.get courseIdx combo of
+                    Just idx -> idx > 0
+                    Nothing -> False
+            ))
+
         newCourseList =
             { schedCount = Array.length newCombos
             , courses = rf.courseList.courses

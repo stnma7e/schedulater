@@ -45,6 +45,17 @@ extractCourses : Subject -> CourseData -> Array Course
 extractCourses sub cd = cd.courses
     |> Array.filter (\c -> c.subject == String.toUpper sub)
 
+findCourse : String -> CourseData -> Maybe CourseIndex
+findCourse title cd = cd.courses
+    |> Array.indexedMap (\courseIdx course ->
+        if course.title == title
+            then Just courseIdx
+            else Nothing
+        )
+    |> Array.filter isJust
+    |> Array.foldl (\courseInfo acc -> courseInfo) Nothing
+
+
 findSection : Int -> CourseData -> Maybe (CourseIndex, ClassIndex)
 findSection crn cd = cd.courses
     |> Array.indexedMap (\courseIdx course -> course.classes

@@ -62,8 +62,9 @@
 }
 
 .subjectSelection {
-    overflow: auto;
+    overflow-y: scroll;
     max-height: 400px;
+    overflow-x: visible;
 }
 
 .schedButton {
