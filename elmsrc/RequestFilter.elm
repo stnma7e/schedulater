@@ -18,10 +18,8 @@ type alias CreditFilter =
 type alias InstructorFilter = Dict String String
 
 type RequestFilterMsg
-    = IncMaxHours
-    | DecMaxHours
-    | IncMinHours
-    | DecMinHours
+    = NewMaxHours Int
+    | NewMinHours Int
     | AddCourse String
 
 type alias ScheduleRequest =
@@ -41,45 +39,25 @@ update msg requestFilters =
                 else course :: requestFilters.courses
             in { requestFilters | courses = newCourses }
 
-        IncMaxHours ->
-            let newHours = min 18 (requestFilters.creditFilter.max + 1)
+        NewMaxHours newMaxHours ->
+            let newHours = max 1 <| min 18 newMaxHours
+                newMinHours = min requestFilters.creditFilter.min newHours
                 newCreditFilter = requestFilters.creditFilter
             in { requestFilters | creditFilter =
                     { newCreditFilter | max = newHours
+                                      , min = newMinHours
                     }
-                }
+               }
 
-        DecMaxHours ->
-            let newHours = max 1 (requestFilters.creditFilter.max - 1)
-                newCreditFilter = requestFilters.creditFilter
-                newRequestFilters =
-                    { requestFilters | creditFilter =
-                        { newCreditFilter  | max = newHours
-                        }
-                    }
-            in if newHours < requestFilters.creditFilter.min
-                then update DecMinHours newRequestFilters
-                else newRequestFilters
-
-        IncMinHours ->
-            let newHours = min 18 (requestFilters.creditFilter.min + 1)
-                newCreditFilter = requestFilters.creditFilter
-                newRequestFilters =
-                    { requestFilters | creditFilter =
-                        { newCreditFilter  | min = newHours
-                        }
-                    }
-            in if newHours > requestFilters.creditFilter.max
-                then update IncMaxHours newRequestFilters
-                else newRequestFilters
-
-        DecMinHours ->
-            let newHours = max 1 (requestFilters.creditFilter.min - 1)
+        NewMinHours newMinHours ->
+            let newHours = max 1 <| min 18 newMinHours
+                newMaxHours = max requestFilters.creditFilter.max newHours
                 newCreditFilter = requestFilters.creditFilter
             in { requestFilters | creditFilter =
-                    { newCreditFilter  | min = newHours
+                    { newCreditFilter | min = newHours
+                                      , max = newMaxHours
                     }
-                }
+               }
 
 encodeScheduleRequest : ScheduleRequest -> String
 encodeScheduleRequest sr = encode 0 <| object

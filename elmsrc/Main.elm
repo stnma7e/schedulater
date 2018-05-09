@@ -2,7 +2,7 @@ port module Main exposing (main)
 
 import Debug exposing (log)
 import Html exposing (Html, button, div, text, input, table, tr, td, thead, tbody, label)
-import Html.Attributes exposing (placeholder, class, id, type_)
+import Html.Attributes exposing (placeholder, class, id, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (string, list)
@@ -122,8 +122,6 @@ view model =
                 , div [] [button [onClick GetScheds] [text "Get Scheds"]]
                 , button [class "schedButton", onClick DecrementSched] [text "Dec Sched"]
                 , button [class "schedButton", onClick IncrementSched] [text "Inc Sched"]
-                , creditHours (DecMaxHours, IncMaxHours) "max"
-                , creditHours (DecMinHours, IncMinHours) "min"
 
                 , Html.br [] []
                 , Html.br [] []
@@ -134,6 +132,32 @@ view model =
                     , toString <| model.renderFilters.courseList.schedCount
                     , toString <| model.renderFilters.lockedClasses
                     , toString <| model.renderFilters.mustUseCourses
+                    ]
+                , div []
+                    [ div []
+                        [ text "time"
+                        ]
+                    , div []
+                        [ text "credit"
+                        , Html.br [] []
+                        , text "max"
+                        , input [type_ "number"
+                                , value <| toString model.requestFilters.creditFilter.max
+                                , onInput (\max -> RequestFilter <| NewMaxHours
+                                    <| Result.withDefault model.requestFilters.creditFilter.max (String.toInt max))
+                                ]
+                                []
+                        , text "min"
+                        , input [type_ "number"
+                                , value <| toString model.requestFilters.creditFilter.min
+                                , onInput (\min -> RequestFilter <| NewMinHours
+                                    <| Result.withDefault model.requestFilters.creditFilter.min (String.toInt min))
+                                ]
+                                []
+                        ]
+                    , div []
+                        [ text "instructor"
+                        ]
                     ]
                 ]
             , div [class "column"]
@@ -173,12 +197,6 @@ renderCurrentSched model =
     sched <| makeSched
         model.renderFilters.courseList
         model.calendar.schedIndex
-
-creditHours : (RequestFilterMsg, RequestFilterMsg) -> String -> Html Msg
-creditHours (dec, inc) minmax = div []
-    [ button [class "schedButton", onClick (RequestFilter dec)] [text <| "Dec" ++ minmax]
-    , button [class "schedButton", onClick (RequestFilter inc)] [text <| "Inc" ++ minmax]
-    ]
 
 reduceListToN : Int -> List a -> List (List a)
 reduceListToN n xs = case xs of
