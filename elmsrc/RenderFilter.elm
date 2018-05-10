@@ -107,4 +107,4 @@ updateCourses rf =
             , courses = rf.courseList.courses
             , combos = newCombos
         }
-    in {rf | courseList = newCourseList}
+    in { rf | courseList = newCourseList }

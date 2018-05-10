@@ -19,8 +19,16 @@ main = Html.program
     , subscriptions = subscriptions
     }
 
-subscriptions model =
-    lockSection (\crn -> RenderFilter <| LockSection crn)
+port sched : List (String, Section) -> Cmd a
+port lockSection : (Int -> a) -> Sub a
+port startTime : (String -> a) -> Sub a
+port endTime : (String -> a) -> Sub a
+
+subscriptions model = Sub.batch
+    [ lockSection (\crn -> RenderFilter <| LockSection crn)
+    , startTime (\time -> RequestFilter <| NewStartTime time)
+    , endTime (\time -> RequestFilter <| NewEndTime time)
+    ]
 
 init =
     let model =
@@ -69,8 +77,8 @@ update msg model = case msg of
     RenderFilter msg ->
         let renderFilters = RenderFilter.update msg model.renderFilters
             cmd = case msg of
-                SelectCourseSubject sub ->
-                    getCourses sub
+                SelectCourseSubject subject ->
+                    getCourses subject
                 otherwise -> Cmd.none
         in {model | renderFilters = renderFilters
                   , calendar = CalendarData 0
@@ -117,7 +125,7 @@ view model =
     div []
         [ div [class "columns"]
             [ div [class "column is-8"]
-                [ div [id "calendar"] []
+                [ div [id "calendar1"] []
 
                 , div [] [button [onClick GetScheds] [text "Get Scheds"]]
                 , button [class "schedButton", onClick DecrementSched] [text "Dec Sched"]
@@ -136,22 +144,27 @@ view model =
                 , div []
                     [ div []
                         [ text "time"
+                        , Html.br [] []
+                        , text "start time"
+                        , input [id "startTime", value <| showTime model.requestFilters.timeFilter.start] []
+                        , text "end time"
+                        , input [id "endTime", value <| showTime model.requestFilters.timeFilter.end] []
                         ]
                     , div []
                         [ text "credit"
                         , Html.br [] []
-                        , text "max"
-                        , input [type_ "number"
-                                , value <| toString model.requestFilters.creditFilter.max
-                                , onInput (\max -> RequestFilter <| NewMaxHours
-                                    <| Result.withDefault model.requestFilters.creditFilter.max (String.toInt max))
-                                ]
-                                []
                         , text "min"
                         , input [type_ "number"
                                 , value <| toString model.requestFilters.creditFilter.min
                                 , onInput (\min -> RequestFilter <| NewMinHours
                                     <| Result.withDefault model.requestFilters.creditFilter.min (String.toInt min))
+                                ]
+                                []
+                        , text "max"
+                        , input [type_ "number"
+                                , value <| toString model.requestFilters.creditFilter.max
+                                , onInput (\max -> RequestFilter <| NewMaxHours
+                                    <| Result.withDefault model.requestFilters.creditFilter.max (String.toInt max))
                                 ]
                                 []
                         ]
@@ -188,9 +201,6 @@ getScheds model = Http.send NewScheds (Http.post "/courses"
     (Http.stringBody "application/json"
         <| encodeScheduleRequest model.requestFilters)
     decodeCourseData)
-
-port sched : List (String, Section) -> Cmd a
-port lockSection : (Int -> a) -> Sub a
 
 renderCurrentSched : Model -> Cmd Msg
 renderCurrentSched model =

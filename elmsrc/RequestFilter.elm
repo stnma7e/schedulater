@@ -1,5 +1,6 @@
 module RequestFilter exposing (..)
 
+import Debug exposing (log)
 import Dict exposing (Dict)
 import Json.Encode exposing (encode, object, list, string, int)
 
@@ -20,6 +21,8 @@ type alias InstructorFilter = Dict String String
 type RequestFilterMsg
     = NewMaxHours Int
     | NewMinHours Int
+    | NewStartTime String
+    | NewEndTime String
     | AddCourse String
 
 type alias ScheduleRequest =
@@ -44,8 +47,9 @@ update msg requestFilters =
                 newMinHours = min requestFilters.creditFilter.min newHours
                 newCreditFilter = requestFilters.creditFilter
             in { requestFilters | creditFilter =
-                    { newCreditFilter | max = newHours
-                                      , min = newMinHours
+                    { newCreditFilter
+                        | max = newHours
+                        , min = newMinHours
                     }
                }
 
@@ -54,10 +58,48 @@ update msg requestFilters =
                 newMaxHours = max requestFilters.creditFilter.max newHours
                 newCreditFilter = requestFilters.creditFilter
             in { requestFilters | creditFilter =
-                    { newCreditFilter | min = newHours
-                                      , max = newMaxHours
+                    { newCreditFilter
+                        | min = newHours
+                        , max = newMaxHours
                     }
                }
+
+        NewStartTime time ->
+            let oldTimeFilter = requestFilters.timeFilter
+                newTimeFilter = case timeFromString time of
+                    Ok t -> { oldTimeFilter | start = t }
+                    Err e -> log e oldTimeFilter
+            in { requestFilters | timeFilter = newTimeFilter }
+
+        NewEndTime time ->
+            let oldTimeFilter = requestFilters.timeFilter
+                newTimeFilter = case timeFromString time of
+                    Ok t -> { oldTimeFilter | end = t }
+                    Err e -> log e oldTimeFilter
+            in { requestFilters | timeFilter = newTimeFilter }
+
+showTime : Int -> String
+showTime t =
+    let mins = t % 60
+        minsStr = if mins < 10
+            then "0" ++ toString mins
+            else toString mins
+    in toString (t // 60) ++ ":" ++ minsStr
+
+timeFromString : String -> Result String Int
+timeFromString time =
+    let timeList = String.split ":" time
+        maybeHours = List.head timeList
+        maybeMins = timeList |> List.tail |> Maybe.andThen List.head
+        maybeTime = Maybe.map2 (\hours mins ->
+            Result.map2 (\h m ->
+                60*h + m
+            ) (String.toInt hours) (String.toInt mins)
+        ) maybeHours maybeMins
+
+    in case maybeTime of
+        Just time -> time
+        Nothing -> Err "hours or minutes did not exist"
 
 encodeScheduleRequest : ScheduleRequest -> String
 encodeScheduleRequest sr = encode 0 <| object

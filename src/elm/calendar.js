@@ -6,6 +6,7 @@ export default class Calendar {
 
         this.class_colors = new Map()
         this.sched = [];
+        this.divId = divId;
 
         schedUpdateFunction.subscribe((newSched) => {
             this.sched = newSched.map(x => {
@@ -19,9 +20,9 @@ export default class Calendar {
 
         });
 
-        $('#calendar').last_width = $(window).width();
+        $('#' + divId).last_width = $(window).width();
 
-        $('#calendar').fullCalendar({
+        $('#' + divId).fullCalendar({
             defaultView: 'agendaWeek',
             minTime: "7:00:00",
             maxTime: "22:00:00",
@@ -33,8 +34,8 @@ export default class Calendar {
             firstDay: 1,
             aspectRatio: 2.6 * (this.last_width / 1008),
             windowResize: function(view) {
-                var multiplier = $(window).width() / $('#calendar').last_width;
-                $('#calendar').fullCalendar({
+                var multiplier = $(window).width() / $('#' + divId).last_width;
+                $('#' + divId).fullCalendar({
                     aspectRatio: 2.6 * multiplier
                 })
             },
@@ -50,9 +51,9 @@ export default class Calendar {
             let calendar_events = extract_event_data(this.sched);
 
             if (calendar_events.needsWeekend) {
-                $('#calendar').fullCalendar('option', 'weekends', true)
+                $('#' + this.divId).fullCalendar('option', 'weekends', true)
             } else {
-                $('#calendar').fullCalendar('option', 'weekends', false)
+                $('#' + this.divId).fullCalendar('option', 'weekends', false)
             }
 
             colorize_events(calendar_events.events, this.class_colors);
