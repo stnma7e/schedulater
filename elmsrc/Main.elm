@@ -199,8 +199,11 @@ view model =
                 ]
             , div [class "column"]
                 [ div
-                    [ class "button is-primary is-outlined schedButton"
-                    , onClick ShowCourseSelector
+                    [ onClick ShowCourseSelector
+                    , class <|"button is-primary schedButton" ++
+                        if not model.addCourse
+                            then " is-outlined"
+                            else ""
                     ]
                     [text "Add courses"]
 
@@ -258,7 +261,17 @@ selectedCoursesTiles selectedCourses = selectedCourses
 courseSelection : String -> List Subject -> List CourseTableData -> Html Msg
 courseSelection subjectSearchString subjects selectedSubjectCourses =
     div []
-        [ input [placeholder "Filter" , onInput (\s -> RenderFilter <| SubjectSearchString s)] []
+        [ div [class "columns"]
+            [ div [class "column"] [input [placeholder "Filter" , onInput (\s -> RenderFilter <| SubjectSearchString s)] []]
+            , div [class "column"]
+                [ if List.length selectedSubjectCourses > 0
+                    then span [ class "button is-primary is-outlined backButton"
+                          , onClick (RenderFilter DeselectCourseSubject)
+                          ]
+                        [ text <| "Back" ]
+                    else span [] []
+                ]
+            ]
 
         , div [class "subjectSelection"]
             (if List.length selectedSubjectCourses < 1
@@ -267,31 +280,36 @@ courseSelection subjectSearchString subjects selectedSubjectCourses =
                     |> List.map (\subject -> div [onClick (RenderFilter <| SelectCourseSubject subject)] [text subject])
                 else showSelectedSubjectCourses subjectSearchString selectedSubjectCourses
             )
+
+        , Html.hr [] []
         ]
 
 showSelectedSubjectCourses : String -> List CourseTableData -> List (Html Msg)
 showSelectedSubjectCourses subjectSearchString selectedSubjectCourses =
-    [ div [ class "button is-primary is-outlined schedButton"
-          , onClick (RenderFilter DeselectCourseSubject)
-          ]
-        [ text <| "Back" ]
-    , div [class "columns"]
-        [ div [class "column is-6"] [text "Course Title"]
-        , div [class "column is-2"] [text "Course #"]
-        , div [class "column is-3"] [text "Credit Hours"]
-        ]
-    , div []
-        (selectedSubjectCourses
-            |> List.filter (\course -> course.title |> String.contains (String.toUpper subjectSearchString))
-            |> List.map (\course ->
-                div [ class "columns"
-                    , onClick (RequestFilter (AddCourse course.title))
-                    ]
-                    [ div [class "column is-6"] [text <| course.title]
-                    , div [class "column is-2"] [text <| course.courseNum]
-                    , div [class "column is-3"] [text <| course.credits]
-                    ]))
+    [ div []
+        [ table [class "table is-narrow is-hoverable courseSelectionTable"]
+            [ thead []
+                [ td [] [text "Course Title"]
+                , td [] [text "Course #"]
+                , td [] [text "Credit Hours"]
+                ]
+            , tbody []
+                (selectedSubjectCourses
+                    |> List.filter (\course -> course.title |> String.contains (String.toUpper subjectSearchString))
+                    |> List.map (\course ->
+                        tr
+                            [ class "courseRow"
+                            , onClick (RequestFilter (AddCourse course.title))
+                            ]
 
+                            [ td [] [text <| course.title]
+                            , td [] [text <| course.courseNum]
+                            , td [] [text <| course.credits]
+                            ]
+                        )
+                    )
+            ]
+        ]
     ]
 
 showFilter : String -> String -> Html Msg -> Html Msg
