@@ -1,7 +1,7 @@
 port module Main exposing (main)
 
 import Debug exposing (log)
-import Html exposing (Html, button, div, text, input, table, tr, td, thead, tbody, label)
+import Html exposing (Html, button, div, text, input, table, tr, td, thead, tbody, label, span)
 import Html.Attributes exposing (placeholder, class, id, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
@@ -122,61 +122,88 @@ update msg model = case msg of
 
 
 view model =
-    div []
+    div [class "container"]
         [ div [class "columns"]
             [ div [class "column is-8"]
-                [ div [id "calendar1"] []
-
-                , div [] [button [onClick GetScheds] [text "Get Scheds"]]
-                , button [class "schedButton", onClick DecrementSched] [text "Dec Sched"]
-                , button [class "schedButton", onClick IncrementSched] [text "Inc Sched"]
-
-                , Html.br [] []
-                , Html.br [] []
-
-                , div [] <| List.map (\x -> x |> toString |> text)
+                [ div [] <| List.map (\x -> x |> toString |> text)
                     [ toString <| model.calendar.schedIndex
                     , toString <| model.renderFilters.selectedSubject
                     , toString <| model.renderFilters.courseList.schedCount
                     , toString <| model.renderFilters.lockedClasses
                     , toString <| model.renderFilters.mustUseCourses
                     ]
+
+                , div [id "calendar"] []
+
+                , div [class "columns"]
+                    [ div [class "column"]
+                        [ div
+                            [ class "button is-primary is-outlined schedButton"
+                            , onClick DecrementSched
+                            ]
+                            [text "Previous"]
+                        ]
+                    , div [class "column"]
+                        [ div
+                            [ class "button is-primary is-outlined schedButton"
+                            , onClick IncrementSched
+                            ]
+                            [text "Next"]
+                        ]
+                    ]
+                , div
+                    [ class "button is-success is-outlined"
+                    , id "goButton"
+                    , onClick GetScheds
+                    ]
+                    [text "Go"]
+
+                , Html.hr [] []
+
                 , div []
-                    [ div []
-                        [ text "time"
-                        , Html.br [] []
-                        , text "start time"
-                        , input [id "startTime", value <| showTime model.requestFilters.timeFilter.start] []
-                        , text "end time"
-                        , input [id "endTime", value <| showTime model.requestFilters.timeFilter.end] []
-                        ]
-                    , div []
-                        [ text "credit"
-                        , Html.br [] []
-                        , text "min"
-                        , input [type_ "number"
-                                , value <| toString model.requestFilters.creditFilter.min
-                                , onInput (\min -> RequestFilter <| NewMinHours
-                                    <| Result.withDefault model.requestFilters.creditFilter.min (String.toInt min))
+                    [ div [class "title"] [text "Customize"]
+                    , showFilter "Time"
+                        "What time do you want to start and finish your schedule?"
+                        <| div [class "columns"]
+                            [ showTimeFilter "Start: " "startTime" model.requestFilters.timeFilter.start
+                            , showTimeFilter "End: " "endTime" model.requestFilters.timeFilter.end
+                            ]
+
+                    , showFilter "Credits"
+                            "How many credit hours do you want to take?"
+                            <| div [class "columns"]
+                                [ div [class "column"]
+                                    [ span [class "title is-6"] [text "Min: "]
+                                    , input [type_ "number"
+                                            , value <| toString model.requestFilters.creditFilter.min
+                                            , onInput (\min -> RequestFilter <| NewMinHours
+                                                <| Result.withDefault model.requestFilters.creditFilter.min (String.toInt min))
+                                            ]
+                                            []
+                                    ]
+                                , div [class "column"]
+                                    [ span [class "title is-6"] [text "Max: "]
+                                    , input [type_ "number"
+                                            , value <| toString model.requestFilters.creditFilter.max
+                                            , onInput (\max -> RequestFilter <| NewMaxHours
+                                                <| Result.withDefault model.requestFilters.creditFilter.max (String.toInt max))
+                                            ]
+                                            []
+                                    ]
                                 ]
-                                []
-                        , text "max"
-                        , input [type_ "number"
-                                , value <| toString model.requestFilters.creditFilter.max
-                                , onInput (\max -> RequestFilter <| NewMaxHours
-                                    <| Result.withDefault model.requestFilters.creditFilter.max (String.toInt max))
-                                ]
-                                []
-                        ]
-                    , div []
-                        [ text "instructor"
-                        ]
+
+                    , showFilter "Instructor"
+                        "Are there any instructors that you don't want to take?"
+                        <| div [] []
                     ]
                 ]
             , div [class "column"]
-                [ button [class "schedButton", onClick ShowCourseSelector] [text "Show courses"]
-                , Html.br [] []
-                , Html.br [] []
+                [ div
+                    [ class "button is-primary is-outlined schedButton"
+                    , onClick ShowCourseSelector
+                    ]
+                    [text "Add courses"]
+
                 , if model.addCourse
                     then courseSelection model.renderFilters.subjectSearchString model.subjects model.renderFilters.selectedSubjectCourses
                     else div [] []
@@ -231,7 +258,7 @@ selectedCoursesTiles selectedCourses = selectedCourses
 courseSelection : String -> List Subject -> List CourseTableData -> Html Msg
 courseSelection subjectSearchString subjects selectedSubjectCourses =
     div []
-        [ input [placeholder "Course Subject" , onInput (\s -> RenderFilter <| SubjectSearchString s)] []
+        [ input [placeholder "Filter" , onInput (\s -> RenderFilter <| SubjectSearchString s)] []
 
         , div [class "subjectSelection"]
             (if List.length selectedSubjectCourses < 1
@@ -244,7 +271,7 @@ courseSelection subjectSearchString subjects selectedSubjectCourses =
 
 showSelectedSubjectCourses : String -> List CourseTableData -> List (Html Msg)
 showSelectedSubjectCourses subjectSearchString selectedSubjectCourses =
-    [ div [ class "backButton"
+    [ div [ class "button is-primary is-outlined schedButton"
           , onClick (RenderFilter DeselectCourseSubject)
           ]
         [ text <| "Back" ]
@@ -266,3 +293,24 @@ showSelectedSubjectCourses subjectSearchString selectedSubjectCourses =
                     ]))
 
     ]
+
+showFilter : String -> String -> Html Msg -> Html Msg
+showFilter title subtitle body =
+    div [class "filterSection"]
+        [ div []
+            [ div [class "title is-4"] [text title]
+            , div [class "subtitle is-6"] [text subtitle]
+            ]
+        , div [class "filterBody"] [body]
+        ]
+
+showTimeFilter : String -> String -> Int -> Html Msg
+showTimeFilter label timePickerId time=
+    div [class "column"]
+        [ span [class "title is-6"] [text label]
+        , input [ class "timePicker"
+                , id timePickerId
+                , value <| showTime time
+                ]
+                []
+        ]

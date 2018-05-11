@@ -2,25 +2,8 @@
 
 #calendar {
     @import 'fullcalendar.min.css';
-    margin-left: 2%;
-    margin-right: 2%;
-}
-
-.sched_button {
-  opacity: 0.6;
-  user-select: none;
-  -moz-user-select: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
-}
-
-.class_table {
-  user-select: none;
-  -moz-user-select: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  text-align: center;
-  clear: both; float: left; display: block; position: relative;
+    margin-left: 1em;
+    margin-bottom: 1em;
 }
 
 #header {
@@ -29,46 +12,38 @@
   margin-bottom: 10px;
 }
 
-.courses_table {
-  margin:auto;
-}
-
-.filterBlock {
-  text-align: center;
-   .dropdown-pane {
-     text-align: left;
-   }
-}
-
-.selectedCourseBox {
-    float:left;
-    border-radius: 2px;
-    border-style: solid;
-    border-width: 1px;
-    height: 8em;
+.schedButton {
+    width: 100%;
     user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
     -ms-user-select: none;
-    text-align: center;
+    margin-bottom: 1em;
 }
-.courseHolder#addCourseButton{
-  fontSize: 8em;
-  height: auto;
-}
-.courseHolder:hover {
-  background-color: gray;
-  cursor: pointer;
+
+#goButton {
+    width: 100%;
+    height: 3em;
 }
 
 .subjectSelection {
     overflow-y: scroll;
-    max-height: 400px;
+    max-height: 20em;
     overflow-x: visible;
+    margin-top: 1em;
+    margin-bottom: 1em;
 }
 
-.schedButton {
-    float: left;
+.filterSection {
+    margin: 1em;
+}
+
+.filterBody {
+    margin: 1em;
+}
+
+.timePicker {
+    width: 5em;
 }
 
 @import "../src/elm/clockpicker/dist/jquery-clockpicker.min.css";
