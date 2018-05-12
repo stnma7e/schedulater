@@ -37,6 +37,7 @@ init =
         , requestFilters = defaultBody
         , renderFilters = defaultRenderFilters
         , addCourse = False
+        , requestFilterStatus = Modified
         }
     in (model, Cmd.batch
         [ getScheds model
@@ -48,12 +49,18 @@ type alias CalendarData =
     { schedIndex : Int
     }
 
+type ScheduleStatus
+    = Received
+    | Pending
+    | Modified
+
 type alias Model =
     { calendar : CalendarData
     , subjects : List Subject
     , requestFilters : ScheduleRequest
     , renderFilters : RenderFilter
     , addCourse: Bool
+    , requestFilterStatus: ScheduleStatus
     }
 
 type Msg
@@ -72,7 +79,10 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model = case msg of
     RequestFilter msg ->
         let requestFilters = RequestFilter.update msg model.requestFilters
-        in ({model | requestFilters = requestFilters}, Cmd.none)
+        in ({model
+            | requestFilters = requestFilters
+            , requestFilterStatus = Modified
+            }, Cmd.none)
 
     RenderFilter msg ->
         let renderFilters = RenderFilter.update msg model.renderFilters
@@ -87,7 +97,7 @@ update msg model = case msg of
 
     GetSubjects -> (model, getSubjects)
 
-    GetScheds -> (model, getScheds model)
+    GetScheds -> ({ model | requestFilterStatus = Pending }, getScheds model)
 
     NewSubjects (Ok newSubjects) ->
         ({ model | subjects = newSubjects}, Cmd.none)
@@ -98,7 +108,10 @@ update msg model = case msg of
 
     NewScheds (Ok newScheds) ->
         let (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds))
-        in ({newModel | calendar = CalendarData 0},
+        in ({ newModel
+            | calendar = CalendarData 0
+            , requestFilterStatus = Received
+            },
             Cmd.batch [cmd, renderCurrentSched newModel])
 
     NewScheds (Err e) ->
@@ -152,7 +165,10 @@ view model =
                         ]
                     ]
                 , div
-                    [ class "button is-success is-outlined"
+                    [ class <| "button is-success is-outlined" ++
+                        case model.requestFilterStatus of
+                            Pending -> " is-loading" -- mind the extra space at the beginning of the string
+                            otherwise -> ""
                     , id "goButton"
                     , onClick GetScheds
                     ]
@@ -249,12 +265,16 @@ selectedCoursesTiles selectedCourses = selectedCourses
         |> List.map (\course -> div [class "box tile is-child"]
             [ text course
             , Html.br [] []
-            , label [class "checkbox"]
-                [ input [ type_ "checkbox"
-                        , onClick (RenderFilter <| MustUseCourse course)
-                        ] []
-                , text "Must use"
+            , div
+                [ onClick (RenderFilter <| MustUseCourse course)
+                , class <|"button is-primary is-outlined courseButton"
                 ]
+                [text "Must use"]
+            , div
+                [ onClick (RenderFilter <| PreviewCourse course)
+                , class <|"button is-primary is-outlined courseButton"
+                ]
+                [text "Preview"]
             ]) -- ))
 
 

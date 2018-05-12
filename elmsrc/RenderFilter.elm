@@ -15,6 +15,7 @@ type alias RenderFilter =
     , selectedSubjectCourses: List CourseTableData
     , lockedClasses: Dict CourseIndex ClassIndex
     , mustUseCourses: List CourseIndex
+    , previewCourse: Maybe CourseIndex
     }
 
 defaultRenderFilters =
@@ -25,6 +26,7 @@ defaultRenderFilters =
     , selectedSubjectCourses = []
     , lockedClasses = Dict.empty
     , mustUseCourses = []
+    , previewCourse = Nothing
     }
 
 type RenderFilterMsg
@@ -34,6 +36,7 @@ type RenderFilterMsg
     | LockSection Int
     | NewSubjectCourseList (Result Http.Error (List CourseTableData))
     | NewCourses CourseData
+    | PreviewCourse String
     | MustUseCourse String
 
 update : RenderFilterMsg -> RenderFilter -> RenderFilter
@@ -61,9 +64,18 @@ update msg rf = case msg of
             , lockedClasses = Dict.empty}
             |> updateCourses
 
+    PreviewCourse courseTitle ->
+        case findCourse courseTitle rf.courseList of
+            Nothing -> log "courseTitle not found for preview" rf
+            Just courseIdx ->
+                (if Just courseIdx == rf.previewCourse
+                    then { rf | previewCourse = Nothing }
+                    else { rf | previewCourse = Just courseIdx })
+                |> updateCourses
+
     MustUseCourse courseTitle ->
         case findCourse courseTitle rf.courseList of
-            Nothing -> log "courseTitle not found" rf
+            Nothing -> log "courseTitle not found for mustUse" rf
             Just courseIdx ->
                 let newMustUseCourses = if List.member courseIdx rf.mustUseCourses
                     then List.filter ((/=) courseIdx) rf.mustUseCourses
@@ -88,23 +100,33 @@ update msg rf = case msg of
 
 updateCourses : RenderFilter -> RenderFilter
 updateCourses rf =
-    let newCombos1 = rf.lockedClasses
-            |> Dict.toList
-            |> flip List.foldl rf.originalCombos (\(courseIdx, sectionIdx) combos ->
-                combos |> Array.filter (\combo -> case Array.get courseIdx combo of
-                    Just sectionIdx2 -> sectionIdx == sectionIdx2
-                    Nothing -> False
+    let newCombos = case rf.previewCourse of
+        Just previewIdx ->
+            let numSections = Array.get previewIdx rf.courseList.courses
+                    |> Maybe.andThen (\course -> Just <| Array.length course.classes)
+                    |> Maybe.withDefault 0
+                comboLength = Array.length rf.courseList.courses
+            in List.range 1 numSections
+                |> List.map (\courseIdx -> Array.initialize comboLength (\i ->
+                        if i == previewIdx then courseIdx else 0))
+                |> Array.fromList
+        otherwise -> -- there is no course being previewed now
+            let newCombos1 = rf.lockedClasses
+                    |> Dict.toList
+                    |> flip List.foldl rf.originalCombos (\(courseIdx, sectionIdx) combos ->
+                        combos |> Array.filter (\combo -> case Array.get courseIdx combo of
+                            Just sectionIdx2 -> sectionIdx == sectionIdx2
+                            Nothing -> False
+                        ))
+            in rf.mustUseCourses
+                |> flip List.foldl newCombos1 (\courseIdx combos ->
+                    combos |> Array.filter (\combo -> case Array.get courseIdx combo of
+                        Just idx -> idx > 0
+                        Nothing -> False
                 ))
-        newCombos = rf.mustUseCourses
-            |> flip List.foldl newCombos1 (\courseIdx combos ->
-                combos |> Array.filter (\combo -> case Array.get courseIdx combo of
-                    Just idx -> idx > 0
-                    Nothing -> False
-            ))
-
-        newCourseList =
+    in { rf | courseList =
             { schedCount = Array.length newCombos
             , courses = rf.courseList.courses
             , combos = newCombos
+            }
         }
-    in { rf | courseList = newCourseList }
