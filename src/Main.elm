@@ -7,6 +7,7 @@ import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (string, list)
 import Array exposing (Array)
+import Dict exposing (Dict)
 
 import Course exposing (..)
 import RequestFilter exposing (..)
@@ -165,9 +166,9 @@ view model =
                         ]
                     ]
                 , div
-                    [ class <| "button is-success is-outlined" ++
+                    [ class <| "button is-success is-outlined" ++ " " ++
                         case model.requestFilterStatus of
-                            Pending -> " is-loading" -- mind the extra space at the beginning of the string
+                            Pending -> "is-loading"
                             otherwise -> ""
                     , id "goButton"
                     , onClick GetScheds
@@ -216,20 +217,20 @@ view model =
             , div [class "column"]
                 [ div
                     [ onClick ShowCourseSelector
-                    , class <|"button is-primary schedButton" ++
+                    , class <|"button is-primary schedButton" ++ " " ++
                         if not model.addCourse
-                            then " is-outlined"
+                            then "is-outlined"
                             else ""
                     ]
                     [text "Add courses"]
-
                 , if model.addCourse
                     then courseSelection model.renderFilters.subjectSearchString model.subjects model.renderFilters.selectedSubjectCourses
                     else div [] []
+
                 , div []
                     [ div [class "tile is-ancestor"]
                         [ div [class "tile is-parent is-vertical"]
-                           (selectedCoursesTiles model.requestFilters.courses)
+                           (selectedCoursesTiles model.requestFilters.courses model.renderFilters.coursePropertyMap)
                         ]
                     ]
                 ]
@@ -254,29 +255,31 @@ renderCurrentSched model =
         model.renderFilters.courseList
         model.calendar.schedIndex
 
-reduceListToN : Int -> List a -> List (List a)
-reduceListToN n xs = case xs of
-    [] -> []
-    otherwise -> (List.take n xs) :: reduceListToN n (List.drop n xs)
-
-selectedCoursesTiles selectedCourses = selectedCourses
---    |> reduceListToN 5
---    |> List.map (\courses -> div [class "tile is-parent"] (courses
-        |> List.map (\course -> div [class "box tile is-child"]
-            [ text course
-            , Html.br [] []
-            , div
-                [ onClick (RenderFilter <| MustUseCourse course)
-                , class <|"button is-primary is-outlined courseButton"
-                ]
-                [text "Must use"]
-            , div
-                [ onClick (RenderFilter <| PreviewCourse course)
-                , class <|"button is-primary is-outlined courseButton"
-                ]
-                [text "Preview"]
-            ]) -- ))
-
+selectedCoursesTiles selectedCourses courseProps = selectedCourses
+    |> List.map (\course -> div [class "box tile is-child"]
+        [ text course
+        , Html.br [] []
+        , div
+            [ onClick (RenderFilter <| MustUseCourse course)
+            , class <|"button is-primary courseButton" ++ " " ++
+                case Dict.get course courseProps of
+                    Nothing -> "is-outlined"
+                    Just props -> if props.mustUse
+                                    then ""
+                                    else "is-outlined"
+            ]
+            [text "Must use"]
+        , div
+            [ onClick (RenderFilter <| PreviewCourse course)
+            , class <|"button is-primary courseButton" ++ " " ++
+                case Dict.get course courseProps of
+                    Nothing -> "is-outlined"
+                    Just props -> if props.preview
+                                    then ""
+                                    else "is-outlined"
+            ]
+            [text "Preview"]
+            ])
 
 courseSelection : String -> List Subject -> List CourseTableData -> Html Msg
 courseSelection subjectSearchString subjects selectedSubjectCourses =

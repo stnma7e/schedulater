@@ -7,6 +7,12 @@ import Dict exposing (Dict)
 
 import Course exposing (..)
 
+type alias FilterProperties =
+    { mustUse: Bool
+    , preview: Bool
+    , locked: Int -- CRN of the course
+    }
+
 type alias RenderFilter =
     { courseList: CourseData
     , originalCombos: Array Sched
@@ -16,6 +22,7 @@ type alias RenderFilter =
     , lockedClasses: Dict CourseIndex ClassIndex
     , mustUseCourses: List CourseIndex
     , previewCourse: Maybe CourseIndex
+    , coursePropertyMap: Dict String FilterProperties
     }
 
 defaultRenderFilters =
@@ -27,6 +34,7 @@ defaultRenderFilters =
     , lockedClasses = Dict.empty
     , mustUseCourses = []
     , previewCourse = Nothing
+    , coursePropertyMap = Dict.empty
     }
 
 type RenderFilterMsg
@@ -49,39 +57,65 @@ update msg rf = case msg of
         in rf
 
     SubjectSearchString f ->
-        {rf | subjectSearchString = f}
+        { rf | subjectSearchString = f }
 
     SelectCourseSubject s ->
-        {rf | selectedSubject = s, subjectSearchString = ""}
+        { rf | selectedSubject = s, subjectSearchString = "" }
 
     DeselectCourseSubject ->
-        {rf | selectedSubject = ""
-            , selectedSubjectCourses = []}
+        { rf
+            | selectedSubject = ""
+            , selectedSubjectCourses = []
+        }
 
     NewCourses courses ->
-        {rf | courseList = courses
+        { rf
+            | courseList = courses
             , originalCombos = courses.combos
-            , lockedClasses = Dict.empty}
-            |> updateCourses
+            , lockedClasses = Dict.empty
+        } |> updateCourses
 
     PreviewCourse courseTitle ->
-        case findCourse courseTitle rf.courseList of
-            Nothing -> log "courseTitle not found for preview" rf
-            Just courseIdx ->
-                (if Just courseIdx == rf.previewCourse
-                    then { rf | previewCourse = Nothing }
-                    else { rf | previewCourse = Just courseIdx })
-                |> updateCourses
+        let newPreview = case findCourse courseTitle rf.courseList of
+                Nothing -> log "courseTitle not found for preview" Nothing
+                Just courseIdx -> if Just courseIdx == rf.previewCourse
+                        then Nothing
+                        else Just courseIdx
+            newPropertyMap = rf.coursePropertyMap
+                |> Dict.update courseTitle (\course -> case course of
+                    Nothing -> Just
+                        { mustUse = False
+                        , preview = True
+                        , locked = 0
+                        }
+                    Just props -> Just (if props.preview
+                                    then { props | preview = False }
+                                    else { props | preview = True } ))
+        in { rf | previewCourse = newPreview
+                , coursePropertyMap = newPropertyMap
+            } |> updateCourses
 
     MustUseCourse courseTitle ->
         case findCourse courseTitle rf.courseList of
             Nothing -> log "courseTitle not found for mustUse" rf
             Just courseIdx ->
                 let newMustUseCourses = if List.member courseIdx rf.mustUseCourses
-                    then List.filter ((/=) courseIdx) rf.mustUseCourses
-                    else courseIdx :: rf.mustUseCourses
-                in { rf | mustUseCourses = newMustUseCourses }
-                    |> updateCourses
+                        then List.filter ((/=) courseIdx) rf.mustUseCourses
+                        else courseIdx :: rf.mustUseCourses
+                    newPropertyMap = rf.coursePropertyMap
+                        |> Dict.update courseTitle (\course -> case course of
+                            Nothing -> Just
+                                { mustUse = True
+                                , preview = False
+                                , locked = 0
+                                }
+                            Just courseProps ->
+                                Just (if courseProps.mustUse
+                                    then { courseProps | mustUse = False }
+                                    else { courseProps | mustUse = True } ))
+                in { rf | mustUseCourses = newMustUseCourses
+                        , coursePropertyMap = newPropertyMap
+                    } |> updateCourses
 
     -- only show schedules that include a certain crn
     LockSection crn -> case findSection crn rf.courseList of
