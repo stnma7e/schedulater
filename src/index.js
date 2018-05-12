@@ -1,8 +1,8 @@
 require("../dist/app.scss");
 
-import Calendar from './elm/calendar';
-import ClockPicker from './elm/clockpicker';
-import { Main } from '../elmsrc/Main.elm';
+import Calendar from './js/calendar';
+import ClockPicker from './js/clockpicker';
+import { Main } from './Main.elm';
 
 $(document).ready(function() {
     var node = document.getElementById('main');

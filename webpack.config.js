@@ -1,9 +1,9 @@
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const extractSass = new ExtractTextPlugin({
-//    filename: "[name].[contenthash].css",
     filename: "dist/bundle.css",
     disable: process.env.NODE_ENV === "development"
 });
+
 var webpack = require('webpack');
 
 module.exports = {
@@ -18,7 +18,7 @@ module.exports = {
                 loader: 'babel-loader',
                 exclude: /node_modules/,
                 query: {
-                    presets: ['es2015', 'react']
+                    presets: ['es2015']
                 }
             },
             {
@@ -44,7 +44,7 @@ module.exports = {
                 loader: 'babel-loader',
                 exclude: /node_modules/,
                 query: {
-                    presets: ['es2015', 'react']
+                    presets: ['es2015']
                 }
             },
             {
