@@ -2,7 +2,7 @@ port module Main exposing (main)
 
 import Debug exposing (log)
 import Html exposing (Html, button, div, text, input, table, tr, td, thead, tbody, label, span)
-import Html.Attributes exposing (placeholder, class, id, type_, value)
+import Html.Attributes exposing (placeholder, class, id, type_, value, disabled, title)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (string, list)
@@ -86,7 +86,7 @@ update msg model = case msg of
             }, Cmd.none)
 
     RenderFilter msg ->
-        let renderFilters = RenderFilter.update msg model.renderFilters
+        let renderFilters = RenderFilter.dispatch msg model.renderFilters
             cmd = case msg of
                 SelectCourseSubject subject ->
                     getCourses subject
@@ -165,13 +165,16 @@ view model =
                             [text "Next"]
                         ]
                     ]
-                , div
+                , button
                     [ class <| "button is-success is-outlined" ++ " " ++
                         case model.requestFilterStatus of
                             Pending -> "is-loading"
                             otherwise -> ""
                     , id "goButton"
                     , onClick GetScheds
+                    , disabled <| case model.requestFilterStatus of
+                        Received -> True
+                        otherwise -> False
                     ]
                     [text "Go"]
 
@@ -230,7 +233,7 @@ view model =
                 , div []
                     [ div [class "tile is-ancestor"]
                         [ div [class "tile is-parent is-vertical"]
-                           (selectedCoursesTiles model.requestFilters.courses model.renderFilters.coursePropertyMap)
+                           (selectedCoursesTiles model.requestFilters.courses model.renderFilters.coursePropertyMap model.renderFilters)
                         ]
                     ]
                 ]
@@ -255,7 +258,7 @@ renderCurrentSched model =
         model.renderFilters.courseList
         model.calendar.schedIndex
 
-selectedCoursesTiles selectedCourses courseProps = selectedCourses
+selectedCoursesTiles selectedCourses courseProps rf = selectedCourses
     |> List.map (\course -> div [class "box tile is-child"]
         [ text course
         , Html.br [] []
@@ -271,15 +274,35 @@ selectedCoursesTiles selectedCourses courseProps = selectedCourses
             [text "Must use"]
         , div
             [ onClick (RenderFilter <| PreviewCourse course)
-            , class <|"button is-primary courseButton" ++ " " ++
+            , class <|"button courseButton" ++ " " ++
                 case Dict.get course courseProps of
-                    Nothing -> "is-outlined"
+                    Nothing -> "is-white"
                     Just props -> if props.preview
-                                    then ""
-                                    else "is-outlined"
+                                    then "is-primary"
+                                    else "is-white"
+            , title "Preview"
             ]
-            [text "Preview"]
-            ])
+            [text "👁"]
+        , Html.br [] []
+        , Html.br [] []
+        , div []
+            [ text "Locked In Section #'s'"
+            , Html.br [] []
+            , let lockedCourse = rf.courseIndexMap
+                |> Dict.get course
+                |> Maybe.andThen (\courseIdx ->
+                    Dict.get courseIdx rf.lockedClasses
+                        |> Maybe.andThen (\classIdx -> Array.get courseIdx rf.courseList.courses
+                            |> Maybe.andThen (\course -> Array.get classIdx course.classes
+                                |> Maybe.andThen (\sections -> Just (sections
+                                    |> Array.map (\section -> section.crn))))))
+              in case log "" lockedCourse of
+                  Nothing -> text ""
+                  Just classIdx -> div []
+                      <| Array.toList
+                      <| Array.map (\crn -> div [] [ text <| toString crn ] ) classIdx
+            ]
+        ])
 
 courseSelection : String -> List Subject -> List CourseTableData -> Html Msg
 courseSelection subjectSearchString subjects selectedSubjectCourses =

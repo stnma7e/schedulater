@@ -23,6 +23,7 @@ type alias RenderFilter =
     , mustUseCourses: List CourseIndex
     , previewCourse: Maybe CourseIndex
     , coursePropertyMap: Dict String FilterProperties
+    , courseIndexMap : Dict String CourseIndex
     }
 
 defaultRenderFilters =
@@ -35,6 +36,7 @@ defaultRenderFilters =
     , mustUseCourses = []
     , previewCourse = Nothing
     , coursePropertyMap = Dict.empty
+    , courseIndexMap = Dict.empty
     }
 
 type RenderFilterMsg
@@ -46,6 +48,15 @@ type RenderFilterMsg
     | NewCourses CourseData
     | PreviewCourse String
     | MustUseCourse String
+
+-- dispatch receives events and decides whether the filter must be updated
+--      if no change can be made (an error occured, etc)
+--          then nothing is propagated to update
+--          else update is called with the message to modify the filter
+--      this will allow finer control over functions that must be called in many cases
+--          i.e. updateCourses
+dispatch : RenderFilterMsg -> RenderFilter -> RenderFilter
+dispatch = update
 
 update : RenderFilterMsg -> RenderFilter -> RenderFilter
 update msg rf = case msg of
@@ -69,11 +80,15 @@ update msg rf = case msg of
         }
 
     NewCourses courses ->
-        { rf
-            | courseList = courses
-            , originalCombos = courses.combos
-            , lockedClasses = Dict.empty
-        } |> updateCourses
+        let courseIndexMap = courses.courses
+            |> flip Array.foldl (0, Dict.empty) (\course (i, dict) ->
+                (i + 1, Dict.insert course.title i dict) )
+            |> Tuple.second
+        in { rf | courseList = courses
+                , originalCombos = courses.combos
+                , lockedClasses = Dict.empty
+                , courseIndexMap = courseIndexMap
+            } |> updateCourses
 
     PreviewCourse courseTitle ->
         let newPreview = case findCourse courseTitle rf.courseList of
@@ -149,7 +164,11 @@ updateCourses rf =
                     |> Dict.toList
                     |> flip List.foldl rf.originalCombos (\(courseIdx, sectionIdx) combos ->
                         combos |> Array.filter (\combo -> case Array.get courseIdx combo of
-                            Just sectionIdx2 -> sectionIdx == sectionIdx2
+                            -- index 0 is reserved for an unused course section
+                            -- so while lockedCourses uses the idicies of the array
+                            -- (starting at 0), this function needs to recognize how
+                            -- combinations are interpreted for rendering
+                            Just sectionIdx2 -> sectionIdx == sectionIdx2 - 1
                             Nothing -> False
                         ))
             in rf.mustUseCourses

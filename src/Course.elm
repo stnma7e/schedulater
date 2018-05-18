@@ -62,7 +62,7 @@ findSection crn cd = cd.courses
         |> Array.indexedMap (\sectionIdx sections -> case Array.get 0 sections of
             -- just choose the first section in that course's timeslot
                 (Just section) -> if section.crn == crn
-                    then Just (sectionIdx + 1) -- 0 index is reserved for inactive class
+                    then Just sectionIdx
                     else Nothing
                 Nothing -> Nothing )
         |> Array.filter isJust
