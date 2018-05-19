@@ -7,36 +7,28 @@ import Dict exposing (Dict)
 
 import Course exposing (..)
 
-type alias FilterProperties =
-    { mustUse: Bool
-    , preview: Bool
-    , locked: Int -- CRN of the course
-    }
-
 type alias RenderFilter =
     { courseList: CourseData
     , originalCombos: Array Sched
+    , courseIndexMap : Dict String CourseIndex
     , subjectSearchString: String
     , selectedSubject: Subject
     , selectedSubjectCourses: List CourseTableData
     , lockedClasses: Dict CourseIndex ClassIndex
     , mustUseCourses: List CourseIndex
     , previewCourse: Maybe CourseIndex
-    , coursePropertyMap: Dict String FilterProperties
-    , courseIndexMap : Dict String CourseIndex
     }
 
 defaultRenderFilters =
     { courseList = CourseData 0 Array.empty Array.empty
     , originalCombos = Array.empty
+    , courseIndexMap = Dict.empty
     , subjectSearchString = ""
     , selectedSubject = ""
     , selectedSubjectCourses = []
     , lockedClasses = Dict.empty
     , mustUseCourses = []
     , previewCourse = Nothing
-    , coursePropertyMap = Dict.empty
-    , courseIndexMap = Dict.empty
     }
 
 type RenderFilterMsg
@@ -96,19 +88,8 @@ update msg rf = case msg of
                 Just courseIdx -> if Just courseIdx == rf.previewCourse
                         then Nothing
                         else Just courseIdx
-            newPropertyMap = rf.coursePropertyMap
-                |> Dict.update courseTitle (\course -> case course of
-                    Nothing -> Just
-                        { mustUse = False
-                        , preview = True
-                        , locked = 0
-                        }
-                    Just props -> Just (if props.preview
-                                    then { props | preview = False }
-                                    else { props | preview = True } ))
-        in { rf | previewCourse = newPreview
-                , coursePropertyMap = newPropertyMap
-            } |> updateCourses
+        in { rf | previewCourse = newPreview }
+            |> updateCourses
 
     MustUseCourse courseTitle ->
         case findCourse courseTitle rf.courseList of
@@ -117,20 +98,8 @@ update msg rf = case msg of
                 let newMustUseCourses = if List.member courseIdx rf.mustUseCourses
                         then List.filter ((/=) courseIdx) rf.mustUseCourses
                         else courseIdx :: rf.mustUseCourses
-                    newPropertyMap = rf.coursePropertyMap
-                        |> Dict.update courseTitle (\course -> case course of
-                            Nothing -> Just
-                                { mustUse = True
-                                , preview = False
-                                , locked = 0
-                                }
-                            Just courseProps ->
-                                Just (if courseProps.mustUse
-                                    then { courseProps | mustUse = False }
-                                    else { courseProps | mustUse = True } ))
-                in { rf | mustUseCourses = newMustUseCourses
-                        , coursePropertyMap = newPropertyMap
-                    } |> updateCourses
+                in { rf | mustUseCourses = newMustUseCourses }
+                    |> updateCourses
 
     -- only show schedules that include a certain crn
     LockSection crn -> case findSection crn rf.courseList of

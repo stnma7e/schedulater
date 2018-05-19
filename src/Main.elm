@@ -233,7 +233,7 @@ view model =
                 , div []
                     [ div [class "tile is-ancestor"]
                         [ div [class "tile is-parent is-vertical"]
-                           (selectedCoursesTiles model.requestFilters.courses model.renderFilters.coursePropertyMap model.renderFilters)
+                           (selectedCoursesTiles model.requestFilters.courses model.renderFilters)
                         ]
                     ]
                 ]
@@ -258,51 +258,51 @@ renderCurrentSched model =
         model.renderFilters.courseList
         model.calendar.schedIndex
 
-selectedCoursesTiles selectedCourses courseProps rf = selectedCourses
-    |> List.map (\course -> div [class "box tile is-child"]
-        [ text course
-        , Html.br [] []
-        , div
-            [ onClick (RenderFilter <| MustUseCourse course)
-            , class <|"button is-primary courseButton" ++ " " ++
-                case Dict.get course courseProps of
-                    Nothing -> "is-outlined"
-                    Just props -> if props.mustUse
-                                    then ""
-                                    else "is-outlined"
-            ]
-            [text "Must use"]
-        , div
-            [ onClick (RenderFilter <| PreviewCourse course)
-            , class <|"button courseButton" ++ " " ++
-                case Dict.get course courseProps of
-                    Nothing -> "is-white"
-                    Just props -> if props.preview
-                                    then "is-primary"
-                                    else "is-white"
-            , title "Preview"
-            ]
-            [text "👁"]
-        , Html.br [] []
-        , Html.br [] []
-        , div []
-            [ text "Locked In Section #'s'"
+selectedCoursesTiles selectedCourses rf = selectedCourses
+    |> List.map (\course ->
+        let courseIdx = case Dict.get course rf.courseIndexMap of
+            Just c -> c
+            Nothing -> -1
+        in div [class "box tile is-child"]
+            [ text course
             , Html.br [] []
-            , let lockedCourse = rf.courseIndexMap
-                |> Dict.get course
-                |> Maybe.andThen (\courseIdx ->
-                    Dict.get courseIdx rf.lockedClasses
-                        |> Maybe.andThen (\classIdx -> Array.get courseIdx rf.courseList.courses
-                            |> Maybe.andThen (\course -> Array.get classIdx course.classes
-                                |> Maybe.andThen (\sections -> Just (sections
-                                    |> Array.map (\section -> section.crn))))))
-              in case log "" lockedCourse of
-                  Nothing -> text ""
-                  Just classIdx -> div []
-                      <| Array.toList
-                      <| Array.map (\crn -> div [] [ text <| toString crn ] ) classIdx
-            ]
-        ])
+            , div
+                [ onClick (RenderFilter <| MustUseCourse course)
+                , class <|"button is-primary courseButton" ++ " " ++
+                    if List.member courseIdx rf.mustUseCourses
+                        then ""
+                        else "is-outlined"
+                ]
+                [text "Must use"]
+            , div
+                [ onClick (RenderFilter <| PreviewCourse course)
+                , class <|"button courseButton" ++ " " ++
+                    case rf.previewCourse of
+                        Nothing -> "is-white"
+                        Just courseIdx2 ->
+                            if courseIdx == courseIdx2
+                                then "is-primary"
+                                else "is-white"
+                , title "Preview"
+                ]
+                [text "👁"]
+            , Html.br [] []
+            , Html.br [] []
+            , div []
+                [ text "Locked In Section #'s'"
+                , Html.br [] []
+                , let lockedCourse = Dict.get courseIdx rf.lockedClasses
+                    |> Maybe.andThen (\classIdx -> Array.get courseIdx rf.courseList.courses
+                        |> Maybe.andThen (\course -> Array.get classIdx course.classes
+                            |> Maybe.andThen (\sections -> Just (sections
+                                |> Array.map (\section -> section.crn)))))
+                  in case lockedCourse of
+                      Nothing -> text ""
+                      Just classIdx -> div []
+                          <| Array.toList
+                          <| Array.map (\crn -> div [] [ text <| toString crn ] ) classIdx
+                ]
+            ])
 
 courseSelection : String -> List Subject -> List CourseTableData -> Html Msg
 courseSelection subjectSearchString subjects selectedSubjectCourses =
