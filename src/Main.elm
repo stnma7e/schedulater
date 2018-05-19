@@ -289,19 +289,32 @@ selectedCoursesTiles selectedCourses rf = selectedCourses
             , Html.br [] []
             , Html.br [] []
             , div []
-                [ text "Locked In Section #'s'"
-                , Html.br [] []
-                , let lockedCourse = Dict.get courseIdx rf.lockedClasses
-                    |> Maybe.andThen (\classIdx -> Array.get courseIdx rf.courseList.courses
-                        |> Maybe.andThen (\course -> Array.get classIdx course.classes
-                            |> Maybe.andThen (\sections -> Just (sections
-                                |> Array.map (\section -> section.crn)))))
-                  in case lockedCourse of
-                      Nothing -> text ""
-                      Just classIdx -> div []
-                          <| Array.toList
-                          <| Array.map (\crn -> div [] [ text <| toString crn ] ) classIdx
-                ]
+                (let maybeCrns = Dict.get courseIdx rf.lockedClasses
+                        |> Maybe.andThen (\classIdx -> Array.get courseIdx rf.courseList.courses
+                            |> Maybe.andThen (\course -> Array.get classIdx course.classes
+                                |> Maybe.andThen (\sections -> Just (sections
+                                    |> Array.map (\section -> section.crn)))))
+                in case maybeCrns of
+                    Nothing -> []
+                    Just crns ->
+                        [ div
+                            [ onClick (RenderFilter <| LockSection
+                                <| Array.foldl (\x acc -> if acc > 0 then acc else x) -1 crns)
+                            , class <|"button courseButton" ++ " " ++
+                                case rf.previewCourse of
+                                    Nothing -> "is-white"
+                                    Just courseIdx2 ->
+                                        if courseIdx == courseIdx2
+                                            then "is-primary"
+                                            else "is-white"
+                            , title "Preview"
+                            ]
+                            [ text "🔓" ]
+                        , text "Locked In Section #'s"
+                        , div []
+                            <| Array.toList
+                            <| Array.map (\crn -> div [] [ text <| toString crn ] ) crns
+                        ])
             ])
 
 courseSelection : String -> List Subject -> List CourseTableData -> Html Msg
