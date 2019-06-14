@@ -12,6 +12,8 @@ import Dict exposing (Dict)
 import Course exposing (..)
 import RequestFilter exposing (..)
 import RenderFilter exposing (..)
+import Combos exposing (..)
+import Solve exposing (..)
 
 main = Html.program
     { init = init
@@ -38,6 +40,7 @@ init =
         , requestFilters = defaultBody
         , renderFilters = defaultRenderFilters
         , addCourse = False
+        , courses = Array.empty
         , requestFilterStatus = Modified
         }
     in (model, Cmd.batch
@@ -61,6 +64,7 @@ type alias Model =
     , requestFilters : ScheduleRequest
     , renderFilters : RenderFilter
     , addCourse: Bool
+    , courses: Array Course
     , requestFilterStatus: ScheduleStatus
     }
 
@@ -71,6 +75,7 @@ type Msg
     | GetScheds
     | NewSubjects (Result Http.Error (List Subject))
     | NewScheds (Result Http.Error (CourseData))
+    | NewCourseData (Array Course)
     | IncrementSched
     | DecrementSched
     | RenderCurrentSched (Cmd Msg)
@@ -98,8 +103,6 @@ update msg model = case msg of
 
     GetSubjects -> (model, getSubjects)
 
-    GetScheds -> ({ model | requestFilterStatus = Pending }, getScheds model)
-
     NewSubjects (Ok newSubjects) ->
         ({ model | subjects = newSubjects}, Cmd.none)
 
@@ -107,13 +110,17 @@ update msg model = case msg of
         let _ = log "ERROR (NewSubjects)" <| toString e
         in (model, Cmd.none)
 
+    GetScheds -> ({ model | requestFilterStatus = Pending }, getScheds model)
+
     NewScheds (Ok newScheds) ->
         let (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds))
-        in ({ newModel
-            | calendar = CalendarData 0
-            , requestFilterStatus = Received
-            },
-            Cmd.batch [cmd, renderCurrentSched newModel])
+            (newModel2, cmd2) =
+                { newModel
+                | calendar = CalendarData 0
+                , requestFilterStatus = Received
+                } |> update (NewCourseData newScheds.courses)
+        in (newModel2,
+            Cmd.batch [cmd, cmd2, renderCurrentSched newModel])
 
     NewScheds (Err e) ->
         let _ = log "ERROR (NewScheds)" <| toString e
@@ -134,6 +141,9 @@ update msg model = case msg of
     ShowCourseSelector ->
         ({model | addCourse = not model.addCourse}, Cmd.none)
 
+    NewCourseData newCourses ->
+        let newScheds = solveCourses model.requestFilters newCourses
+        in (model, Cmd.none)
 
 view model =
     div [class "container"]

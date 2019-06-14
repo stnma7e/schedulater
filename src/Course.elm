@@ -35,6 +35,8 @@ type alias CourseData =
     , combos: Array Sched
     }
 
+type alias CourseData2 = Array Course
+
 type alias CourseTableData =
     { courseNum: String
     , credits: String

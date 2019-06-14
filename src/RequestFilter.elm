@@ -4,7 +4,8 @@ import Debug exposing (log)
 import Dict exposing (Dict)
 import Json.Encode exposing (encode, object, list, string, int)
 
-import Course
+import Course exposing (..)
+import Combos exposing (..)
 
 type alias TimeFilter =
     { start: Int
@@ -31,7 +32,6 @@ type alias ScheduleRequest =
     , creditFilter: CreditFilter
     , instructorFilter: InstructorFilter
     }
-
 
 update : RequestFilterMsg -> ScheduleRequest -> ScheduleRequest
 update msg requestFilters =
