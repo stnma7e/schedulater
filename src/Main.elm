@@ -75,7 +75,6 @@ type Msg
     | GetScheds
     | NewSubjects (Result Http.Error (List Subject))
     | NewScheds (Result Http.Error (CourseData))
-    | NewCourseData (Array Course)
     | IncrementSched
     | DecrementSched
     | RenderCurrentSched (Cmd Msg)
@@ -113,14 +112,12 @@ update msg model = case msg of
     GetScheds -> ({ model | requestFilterStatus = Pending }, getScheds model)
 
     NewScheds (Ok newScheds) ->
-        let (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds))
-            (newModel2, cmd2) =
-                { newModel
+        let newScheds1 = solveCourses model.requestFilters newScheds.courses
+            (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds1))
+        in ({ newModel
                 | calendar = CalendarData 0
                 , requestFilterStatus = Received
-                } |> update (NewCourseData newScheds.courses)
-        in (newModel2,
-            Cmd.batch [cmd, cmd2, renderCurrentSched newModel])
+                }, Cmd.batch [cmd, renderCurrentSched newModel])
 
     NewScheds (Err e) ->
         let _ = log "ERROR (NewScheds)" <| toString e
@@ -140,10 +137,6 @@ update msg model = case msg of
 
     ShowCourseSelector ->
         ({model | addCourse = not model.addCourse}, Cmd.none)
-
-    NewCourseData newCourses ->
-        let newScheds = solveCourses model.requestFilters newCourses
-        in (model, Cmd.none)
 
 view model =
     div [class "container"]

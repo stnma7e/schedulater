@@ -1,7 +1,9 @@
 module Solve exposing (..)
 
 import Array exposing (Array)
+import Result
 import Maybe exposing (withDefault, andThen)
+import Debug exposing (log)
 
 import RequestFilter exposing (..)
 import Course exposing (..)
@@ -19,7 +21,7 @@ solveCourses : ScheduleRequest -> Array Course -> CourseData
 solveCourses sr courses =
     let currentCombo = Array.repeat (Array.length courses) 0
         initialCombo = Array.repeat (Array.length courses) 0
-        maxCombo = Array.map (\c -> c.classes |> Array.length) courses
+        maxCombo = log "max" <| Array.map (\c -> c.classes |> Array.length) courses
         combos = Combos initialCombo maxCombo
     in runComboAndSolve sr courses combos []
 
@@ -32,31 +34,54 @@ runComboAndSolve sr courses combos valid =
             else runComboAndSolve sr courses nextCombos valid
 
 checkCombo : ScheduleRequest -> Array Course -> Combo -> Bool
-checkCombo s a b = withDefault False (getComboSections a b
-    |> andThen checkTimes)
+checkCombo s courses combo =
+    let y = getComboSections courses combo
+        x = withDefault True <| (y |> checkTimesCollide |> Maybe.map not)
+        z = checkCreditHours courses combo 12 15
+    in z && x
 
-getComboSections : Array Course -> Combo -> Maybe (List Section)
+checkCreditHours : Array Course -> Combo -> Int -> Int -> Bool
+checkCreditHours courses combo min max =
+    let l_courses = Array.toList courses
+        l_combo = Array.toList combo
+        courseCredits = List.map2 (\course comboIndex ->
+            if comboIndex > 0
+                then case String.toInt course.credits of
+                    Ok credit -> credit
+                    Err _ -> 1000
+                else 0) l_courses l_combo
+        sum = List.foldl (+) 0 courseCredits
+    in sum >= min && sum <= max
+
+-- returns true if times collide
+checkTimesCollide : List (Maybe Section) -> Maybe Bool
+checkTimesCollide sections = case sections of
+    [] -> Just False
+    (section :: sx) ->
+        let classTimes = section |> andThen (\s -> getClassTimes s.daytimes)
+            allClassTimes = withDefault [] <| sequence
+                <| List.map (andThen (\s -> getClassTimes s.daytimes))
+                <| List.filter isJust sx
+        in Maybe.map ((||) <| checkTimeConflicts classTimes allClassTimes)
+            (checkTimesCollide sx)
+
+checkTimeConflicts : Maybe ClassTimes -> List ClassTimes -> Bool
+checkTimeConflicts ct cts = withDefault False <| (ct |> andThen (\ct1 ->
+    Just <| List.foldl (||) (False)
+        <| List.map (\ct2 -> checkClassTimesCollide ct1 ct2)
+        cts))
+
+getComboSections : Array Course -> Combo -> List (Maybe Section)
 getComboSections courses combo =
     let comboSections = flip Array.indexedMap combo
         <| \i -> getIthSectionOfCourse <| Array.get i courses
-    in sequence (Array.toList comboSections)
-
-checkTimes : List Section -> Maybe Bool
-checkTimes sections =
-    if List.length sections == 0
-        then Just True
-        else let section = List.head sections
-                 classTimes = sequence <| flip List.map sections (\s -> getClassTimes s.daytimes)
-             in Maybe.map2 (&&)
-                (checkTimeConflicts (section |> andThen (\s -> getClassTimes s.daytimes)) classTimes)
-                (checkTimes (withDefault [] <| List.tail sections))
-
-checkTimeConflicts : Maybe ClassTimes -> Maybe (List ClassTimes) -> Maybe Bool
-checkTimeConflicts = Maybe.map2 (\ct1 cts1 -> List.foldl (&&) True
-        <| List.map (\ct2 -> checkTimeConflict ct2 ct2) cts1)
-
-checkTimeConflict : ClassTimes -> ClassTimes -> Bool
-checkTimeConflict ct1 ct2 = False
+    in Array.toList comboSections
 
 getIthSectionOfCourse : Maybe Course -> ClassIndex -> Maybe Section
-getIthSectionOfCourse c i = Nothing
+getIthSectionOfCourse c i = c
+    |> andThen (\x -> Array.get (i - 1) x.classes)
+    |> andThen (Array.get 0)
+
+isJust x = case x of
+    Nothing -> False
+    Just _ -> True
