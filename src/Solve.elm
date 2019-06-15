@@ -1,14 +1,12 @@
 module Solve exposing (..)
 
-import Array exposing (..)
-import Maybe exposing (andThen)
-import Parser exposing ((|=), (|.), run, succeed, end, int, symbol)
+import Array exposing (Array)
+import Maybe exposing (withDefault, andThen)
 
 import RequestFilter exposing (..)
 import Course exposing (..)
 import Combos exposing (..)
-
-type alias ClassTime = String
+import ClassTimes exposing (..)
 
 sequence : List (Maybe a) -> Maybe (List a)
 sequence mss = case mss of
@@ -34,32 +32,31 @@ runComboAndSolve sr courses combos valid =
             else runComboAndSolve sr courses nextCombos valid
 
 checkCombo : ScheduleRequest -> Array Course -> Combo -> Bool
-checkCombo s a b = True
+checkCombo s a b = withDefault False (getComboSections a b
+    |> andThen checkTimes)
 
-getCourseForCombo : Array Course -> Combo -> Maybe (Array Section)
-getCourseForCombo courses combo =
-    let comboSections = Array.indexedMap (\i -> getIthSectionOfCourse <| Array.get i courses) combo
-        maybeComboSections = sequence (Array.toList comboSections)
-    in maybeComboSections
-        |> andThen (\sections -> if checkTimes sections
-            then Maybe.map (Array.fromList) maybeComboSections
-            else Nothing)
+getComboSections : Array Course -> Combo -> Maybe (List Section)
+getComboSections courses combo =
+    let comboSections = flip Array.indexedMap combo
+        <| \i -> getIthSectionOfCourse <| Array.get i courses
+    in sequence (Array.toList comboSections)
 
-checkTimes : List Section -> Bool
+checkTimes : List Section -> Maybe Bool
 checkTimes sections =
-    let classTimes = List.map (\x -> "") sections
-    in List.foldl (&&) True <| (flip List.map sections
-        (\section -> checkTimeConflict section.daytimes classTimes))
+    if List.length sections == 0
+        then Just True
+        else let section = List.head sections
+                 classTimes = sequence <| flip List.map sections (\s -> getClassTimes s.daytimes)
+             in Maybe.map2 (&&)
+                (checkTimeConflicts (section |> andThen (\s -> getClassTimes s.daytimes)) classTimes)
+                (checkTimes (withDefault [] <| List.tail sections))
 
-checkTimeConflict : ClassTime -> List ClassTime -> Bool
-checkTimeConflict ct cts = False
+checkTimeConflicts : Maybe ClassTimes -> Maybe (List ClassTimes) -> Maybe Bool
+checkTimeConflicts = Maybe.map2 (\ct1 cts1 -> List.foldl (&&) True
+        <| List.map (\ct2 -> checkTimeConflict ct2 ct2) cts1)
+
+checkTimeConflict : ClassTimes -> ClassTimes -> Bool
+checkTimeConflict ct1 ct2 = False
 
 getIthSectionOfCourse : Maybe Course -> ClassIndex -> Maybe Section
 getIthSectionOfCourse c i = Nothing
-
-parseClassTime s = flip run s
-    (time |. (symbol ",") |= time |. (symbol "|") |= days |. end)
-
-time = int |= int |. (symbol ":") |= int |= int |. end
-
-days = int
