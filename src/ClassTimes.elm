@@ -5,7 +5,8 @@ import Bitwise exposing (shiftLeftBy)
 import Maybe exposing (withDefault, andThen)
 import Result exposing (withDefault)
 import Parser exposing (Parser, (|=), (|.), run, succeed, int, symbol,
-    keep, ignore, Count, zeroOrMore, oneOrMore)
+    oneOf, chompIf, chompWhile, getChompedString)
+import Tuple exposing (pair)
 import Debug exposing (log)
 
 type alias ClassTimes = List ClassTime
@@ -22,40 +23,46 @@ type alias Days = Int
 getClassTimes : String -> Maybe ClassTimes
 getClassTimes s = case run classTimes s of
     Ok ct -> Just ct
-    Err err -> let l = log ("error parsing daytimes") err
+    Err err -> let l = log ("error parsing daytimes, " ++ s) err
                 in Nothing
 
 classTimes : Parser ClassTimes
-classTimes = Parser.repeat oneOrMore classTime
+classTimes = Parser.sequence
+    { start = ""
+    , separator = ";"
+    , end = ""
+    , spaces = Parser.spaces
+    , item = classTime
+    , trailing = Parser.Optional
+    }
 
 classTime : Parser ClassTime
 classTime = succeed ClassTime
     |= startEndTime
     |. symbol "|"
     |= days
-    |. ignore zeroOrMore (\c -> c == ';')
 
 days : Parser Days
 days = succeed identity
-    |= keep oneOrMore isDayLetter
-    |> Parser.map (\daysString -> Maybe.withDefault 0 <| convertDayStringToInt daysString)
+    |= chompWhile isDayLetter
+    |> getChompedString
+    |> Parser.map (\daysString -> Maybe.withDefault 0
+        <| convertDayStringToInt daysString)
 
 startEndTime : Parser StartEndTime
 startEndTime = succeed StartEndTime
     |= time |. (symbol ",") |= time
 
 time : Parser Int
-time = succeed (,)
+time = succeed pair
     |= num |. (symbol ":") |= num
     |> Parser.map (\(t1, t2) -> t1*60 + t2)
 
 num : Parser Int
 num = succeed identity
-    |= keep (Parser.Exactly 2) isNumber
-    |> Parser.map (\s -> Result.withDefault 0 <| String.toInt s)
-
-isNumber : Char -> Bool
-isNumber c = not <| List.isEmpty <| List.filter ((==) c) (String.toList "0123456789")
+    |. chompWhile Char.isDigit
+    |> getChompedString
+    |> Parser.map (\n -> Maybe.withDefault 0 <| String.toInt n)
 
 isDayLetter : Char -> Bool
 isDayLetter c = not <| List.isEmpty <| List.filter ((==) c) (String.toList "MTWRFSU")
@@ -63,8 +70,8 @@ isDayLetter c = not <| List.isEmpty <| List.filter ((==) c) (String.toList "MTWR
 convertDayStringToInt : String -> Maybe Days
 convertDayStringToInt s =
     List.foldl (\day mask -> Dict.get day daysMap
-            |> andThen (\day1 -> Maybe.map (\mask1 -> Bitwise.or day1 mask1) mask))
-        (Just 0) <| String.toList s
+        |> andThen (\day1 -> Maybe.map (\mask1 -> Bitwise.or day1 mask1) mask))
+    (Just 0) <| String.toList s
 
 daysMap = Dict.fromList <|
     [ ('M', shiftLeftBy 0 1)

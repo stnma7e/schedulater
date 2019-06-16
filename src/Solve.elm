@@ -10,6 +10,8 @@ import Course exposing (..)
 import Combos exposing (..)
 import ClassTimes exposing (..)
 
+flip f a b = f b a
+
 sequence : List (Maybe a) -> Maybe (List a)
 sequence mss = case mss of
     [] -> Just []
@@ -45,11 +47,11 @@ checkCreditHours courses combo min max =
     let l_courses = Array.toList courses
         l_combo = Array.toList combo
         courseCredits = List.map2 (\course comboIndex ->
-            if comboIndex > 0
-                then case String.toInt course.credits of
-                    Ok credit -> credit
-                    Err _ -> 1000
-                else 0) l_courses l_combo
+            if comboIndex > 0 then
+                case String.toInt course.credits of
+                    Just credit -> credit
+                    Nothing -> 1000
+            else 0) l_courses l_combo
         sum = List.foldl (+) 0 courseCredits
     in sum >= min && sum <= max
 
@@ -74,7 +76,7 @@ checkTimeConflicts ct cts = withDefault False <| (ct |> andThen (\ct1 ->
 getComboSections : Array Course -> Combo -> List (Maybe Section)
 getComboSections courses combo =
     let comboSections = flip Array.indexedMap combo
-        <| \i -> getIthSectionOfCourse <| Array.get i courses
+            <| \i -> getIthSectionOfCourse <| Array.get i courses
     in Array.toList comboSections
 
 getIthSectionOfCourse : Maybe Course -> ClassIndex -> Maybe Section

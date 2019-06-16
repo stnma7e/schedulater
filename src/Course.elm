@@ -1,6 +1,7 @@
 module Course exposing (..)
 
 import Dict
+import Tuple exposing (pair)
 import Array exposing (Array)
 import Json.Decode exposing (field, index, int, string, array, map2, map3, map5)
 import Maybe exposing (withDefault, andThen)
@@ -69,7 +70,7 @@ findSection crn cd = cd.courses
                 Nothing -> Nothing )
         |> Array.filter isJust
         |> Array.foldl (\sectionIdx acc -> sectionIdx) Nothing
-        |> Maybe.map ((,) courseIdx)
+        |> Maybe.map (pair courseIdx)
     )
     |> Array.filter isJust
     |> Array.foldl (\courseInfo acc -> courseInfo) Nothing
