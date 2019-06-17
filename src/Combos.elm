@@ -13,25 +13,27 @@ type alias Combos =
     }
 
 incrementCombo : Combos -> Maybe Combos
-incrementCombo c = incrementCombo1 c 0 False
+incrementCombo c = incrementCombo_ c 0 False
 
-incrementCombo1 : Combos -> Int -> Bool -> Maybe Combos
-incrementCombo1 c i flip = if checkDone c 0
-    then Nothing
-    else case incrementAtPosition i c of
-        Just c1 -> if flip
-            then Just { c1 | current = zeroBefore (Array.toList c1.current) i }
-            else Just c1
-        Nothing -> incrementCombo1 c (i + 1) True
+incrementCombo_ : Combos -> Int -> Bool -> Maybe Combos
+incrementCombo_ c i flip = checkDone c 0
+    |> andThen (\done ->
+        if done then
+            Nothing
+        else case incrementAtPosition i c of
+            Just c1 -> if flip
+                then Just { c1 | current = zeroBefore (Array.toList c1.current) i }
+                else Just c1
+            Nothing -> incrementCombo_ c (i + 1) True)
 
-checkDone : Combos -> Int -> Bool
+checkDone : Combos -> Int -> Maybe Bool
 checkDone c i = if i >= Array.length c.current
-    then True
+    then Just True
     else case getAtPosition i c of
         Just (j_current, j_max) -> if j_current >= j_max
             then checkDone c (i + 1)
-            else False
-        Nothing -> Debug.todo "why u broke"
+            else Just False
+        Nothing -> Nothing
 
 zeroBefore : List Int -> Int -> Combo
 zeroBefore c i = Array.fromList <| (List.repeat (i - 0) 0) ++ (List.drop (i - 0) c)

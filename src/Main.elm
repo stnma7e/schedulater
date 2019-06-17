@@ -140,111 +140,6 @@ update msg model = case msg of
     ShowCourseSelector ->
         ({model | addCourse = not model.addCourse}, Cmd.none)
 
-view model =
-    div [class "container"]
-        [ div [class "columns"]
-            [ div [class "column is-8"]
-                [ div [] <| List.map text
-                    [ String.fromInt <| model.calendar.schedIndex
-                    , model.renderFilters.selectedSubject
-                    , String.fromInt <| model.renderFilters.courseList.schedCount
-                    -- , Debug.toString <| model.renderFilters.lockedClasses
-                    -- , Debug.toString <| model.renderFilters.mustUseCourses
-                    ]
-
-                , div [id "calendar"] []
-
-                , div [class "columns"]
-                    [ div [class "column"]
-                        [ div
-                            [ class "button is-primary is-outlined schedButton"
-                            , onClick DecrementSched
-                            ]
-                            [text "Previous"]
-                        ]
-                    , div [class "column"]
-                        [ div
-                            [ class "button is-primary is-outlined schedButton"
-                            , onClick IncrementSched
-                            ]
-                            [text "Next"]
-                        ]
-                    ]
-                , button
-                    [ class <| "button is-success is-outlined" ++ " " ++
-                        case model.requestFilterStatus of
-                            Pending -> "is-loading"
-                            otherwise -> ""
-                    , id "goButton"
-                    , onClick GetScheds
-                    , disabled <| case model.requestFilterStatus of
-                        Received -> True
-                        otherwise -> False
-                    ]
-                    [text "Go"]
-
-                , Html.hr [] []
-
-                , div []
-                    [ div [class "title"] [text "Customize"]
-                    , showFilter "Time"
-                        "What time do you want to start and finish your schedule?"
-                        <| div [class "columns"]
-                            [ showTimeFilter "Start: " "startTime" model.requestFilters.timeFilter.start
-                            , showTimeFilter "End: " "endTime" model.requestFilters.timeFilter.end
-                            ]
-
-                    , showFilter "Credits"
-                            "How many credit hours do you want to take?"
-                            <| div [class "columns"]
-                                [ div [class "column"]
-                                    [ span [class "title is-6"] [text "Min: "]
-                                    , input [type_ "number"
-                                            , value <| String.fromInt model.requestFilters.creditFilter.min
-                                            , onInput (\min -> RequestFilter <| NewMinHours
-                                                <| Maybe.withDefault model.requestFilters.creditFilter.min (String.toInt min))
-                                            ]
-                                            []
-                                    ]
-                                , div [class "column"]
-                                    [ span [class "title is-6"] [text "Max: "]
-                                    , input [type_ "number"
-                                            , value <| String.fromInt model.requestFilters.creditFilter.max
-                                            , onInput (\max -> RequestFilter <| NewMaxHours
-                                                <| Maybe.withDefault model.requestFilters.creditFilter.max (String.toInt max))
-                                            ]
-                                            []
-                                    ]
-                                ]
-
-                    , showFilter "Instructor"
-                        "Are there any instructors that you don't want to take?"
-                        <| div [] []
-                    ]
-                ]
-            , div [class "column"]
-                [ div
-                    [ onClick ShowCourseSelector
-                    , class <|"button is-primary schedButton" ++ " " ++
-                        if not model.addCourse
-                            then "is-outlined"
-                            else ""
-                    ]
-                    [text "Add courses"]
-                , if model.addCourse
-                    then courseSelection model.renderFilters.subjectSearchString model.subjects model.renderFilters.selectedSubjectCourses
-                    else div [] []
-
-                , div []
-                    [ div [class "tile is-ancestor"]
-                        [ div [class "tile is-parent is-vertical"]
-                           (selectedCoursesTiles model.requestFilters.courses model.renderFilters)
-                        ]
-                    ]
-                ]
-            ]
-        ]
-
 getSubjects : Cmd Msg
 getSubjects = Http.get
     { url = "/subjects"
@@ -270,6 +165,127 @@ renderCurrentSched model =
     sched <| makeSched
         model.renderFilters.courseList
         model.calendar.schedIndex
+
+view model =
+    div [class "container"]
+        [ div [class "columns"]
+            [ div [class "column is-8"]
+                [ debugInfo model
+
+                , div [id "calendar"] []
+
+                , nextPrevSchedButtons
+
+                , goButton model
+
+                , Html.hr [] []
+
+                , filters model
+                ]
+            , div [class "column"]
+                <| courseSelector model
+            ]
+        ]
+
+debugInfo model =
+    div [] <| List.map text
+        [ String.fromInt <| model.calendar.schedIndex
+        , model.renderFilters.selectedSubject
+        , String.fromInt <| model.renderFilters.courseList.schedCount
+        -- , Debug.toString <| model.renderFilters.lockedClasses
+        -- , Debug.toString <| model.renderFilters.mustUseCourses
+        ]
+
+nextPrevSchedButtons =
+    div [class "columns"]
+        [ div [class "column"]
+            [ div
+                [ class "button is-primary is-outlined schedButton"
+                , onClick DecrementSched
+                ]
+                [text "Previous"]
+            ]
+        , div [class "column"]
+            [ div
+                [ class "button is-primary is-outlined schedButton"
+                , onClick IncrementSched
+                ]
+                [text "Next"]
+            ]
+        ]
+
+goButton model =
+    button
+        [ class <| "button is-success is-outlined" ++ " " ++
+            case model.requestFilterStatus of
+                Pending -> "is-loading"
+                otherwise -> ""
+        , id "goButton"
+        , onClick GetScheds
+        , disabled <| case model.requestFilterStatus of
+            Received -> True
+            otherwise -> False
+        ]
+        [text "Go"]
+
+filters model =
+    div []
+        [ div [class "title"] [text "Customize"]
+        , showFilter "Time"
+            "What time do you want to start and finish your schedule?"
+            <| div [class "columns"]
+                [ showTimeFilter "Start: " "startTime" model.requestFilters.timeFilter.start
+                , showTimeFilter "End: " "endTime" model.requestFilters.timeFilter.end
+                ]
+
+        , showFilter "Credits"
+                "How many credit hours do you want to take?"
+                <| div [class "columns"]
+                    [ div [class "column"]
+                        [ span [class "title is-6"] [text "Min: "]
+                        , input [type_ "number"
+                                , value <| String.fromInt model.requestFilters.creditFilter.min
+                                , onInput (\min -> RequestFilter <| NewMinHours
+                                    <| Maybe.withDefault model.requestFilters.creditFilter.min (String.toInt min))
+                                ]
+                                []
+                        ]
+                    , div [class "column"]
+                        [ span [class "title is-6"] [text "Max: "]
+                        , input [type_ "number"
+                                , value <| String.fromInt model.requestFilters.creditFilter.max
+                                , onInput (\max -> RequestFilter <| NewMaxHours
+                                    <| Maybe.withDefault model.requestFilters.creditFilter.max (String.toInt max))
+                                ]
+                                []
+                        ]
+                    ]
+
+        , showFilter "Instructor"
+            "Are there any instructors that you don't want to take?"
+            <| div [] []
+        ]
+
+courseSelector model =
+    [ div
+        [ onClick ShowCourseSelector
+        , class <|"button is-primary schedButton" ++ " " ++
+            if not model.addCourse
+                then "is-outlined"
+                else ""
+        ]
+        [text "Add courses"]
+    , if model.addCourse
+        then courseSelection model.renderFilters.subjectSearchString model.subjects model.renderFilters.selectedSubjectCourses
+        else div [] []
+
+    , div []
+        [ div [class "tile is-ancestor"]
+            [ div [class "tile is-parent is-vertical"]
+               <| selectedCoursesTiles model.requestFilters.courses model.renderFilters
+            ]
+        ]
+    ]
 
 selectedCoursesTiles selectedCourses rf = selectedCourses
     |> List.map (\course ->
