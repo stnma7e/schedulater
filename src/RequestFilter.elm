@@ -2,9 +2,11 @@ module RequestFilter exposing (..)
 
 import Debug exposing (log)
 import Dict exposing (Dict)
+import Maybe exposing (andThen)
 import Json.Encode exposing (encode, object, list, string, int)
 
-import Course
+import Course exposing (..)
+import Combos exposing (..)
 
 type alias TimeFilter =
     { start: Int
@@ -32,15 +34,14 @@ type alias ScheduleRequest =
     , instructorFilter: InstructorFilter
     }
 
-
 update : RequestFilterMsg -> ScheduleRequest -> ScheduleRequest
 update msg requestFilters =
     case msg of
         AddCourse course ->
-            let newCourses = if List.member course requestFilters.courses
-                then List.filter ((/=) course) requestFilters.courses
-                else course :: requestFilters.courses
-            in { requestFilters | courses = newCourses }
+                let newCourses = if List.member course requestFilters.courses
+                        then List.filter ((/=) course) requestFilters.courses
+                        else course :: requestFilters.courses
+                in { requestFilters | courses = newCourses }
 
         NewMaxHours newMaxHours ->
             let newHours = max 1 <| min 18 newMaxHours
@@ -67,43 +68,40 @@ update msg requestFilters =
         NewStartTime time ->
             let oldTimeFilter = requestFilters.timeFilter
                 newTimeFilter = case timeFromString time of
-                    Ok t -> { oldTimeFilter | start = t }
-                    Err e -> log e oldTimeFilter
+                    Just t -> { oldTimeFilter | start = t }
+                    Nothing -> log "start time not parsed" oldTimeFilter
             in { requestFilters | timeFilter = newTimeFilter }
 
         NewEndTime time ->
             let oldTimeFilter = requestFilters.timeFilter
                 newTimeFilter = case timeFromString time of
-                    Ok t -> { oldTimeFilter | end = t }
-                    Err e -> log e oldTimeFilter
+                    Just t -> { oldTimeFilter | end = t }
+                    Nothing -> log "end time not parsed" oldTimeFilter
             in { requestFilters | timeFilter = newTimeFilter }
 
 showTime : Int -> String
 showTime t =
-    let mins = t % 60
+    let mins = remainderBy 60 t
         minsStr = if mins < 10
-            then "0" ++ toString mins
-            else toString mins
-    in toString (t // 60) ++ ":" ++ minsStr
+            then "0" ++ String.fromInt mins
+            else String.fromInt mins
+    in String.fromInt (t // 60) ++ ":" ++ minsStr
 
-timeFromString : String -> Result String Int
+timeFromString : String -> Maybe Int
 timeFromString time =
     let timeList = String.split ":" time
         maybeHours = List.head timeList
         maybeMins = timeList |> List.tail |> Maybe.andThen List.head
         maybeTime = Maybe.map2 (\hours mins ->
-            Result.map2 (\h m ->
-                60*h + m
-            ) (String.toInt hours) (String.toInt mins)
-        ) maybeHours maybeMins
-
-    in case maybeTime of
-        Just time -> time
-        Nothing -> Err "hours or minutes did not exist"
+            Maybe.map2 (\h m ->
+                60*h + m)
+            (String.toInt hours) (String.toInt mins))
+            maybeHours maybeMins
+    in maybeTime |> andThen identity
 
 encodeScheduleRequest : ScheduleRequest -> String
 encodeScheduleRequest sr = encode 0 <| object
-    [ ("courses", list <| List.map string sr.courses)
+    [ ("courses", list string sr.courses)
     , ("time_filter", object
         [ ("start", int sr.timeFilter.start)
         , ("end", int sr.timeFilter.end)
@@ -119,7 +117,8 @@ encodeScheduleRequest sr = encode 0 <| object
     ]
 
 defaultBody =
-    { courses = ["SURVEY OF CHEMISTRY I","SURVEY OF CHEMISTRY II","CHEM I CONCEPT DEVELOPMENT","PRINCIPLES OF CHEMISTRY I","PRINCIPLES OF CHEMISTRY II","INTERMEDIATE ORG CHEM LAB I","ORGANIC CHEMISTRY I","ORGANIC CHEMISTRY PROBLEMS I","ORGANIC CHEMISTRY II"]
+    { courses = ["SURVEY OF CHEMISTRY I","SURVEY OF CHEMISTRY II","CHEM I CONCEPT DEVELOPMENT","PRINCIPLES OF CHEMISTRY I","PRINCIPLES OF CHEMISTRY II"
+                ,"INTERMEDIATE ORG CHEM LAB I","ORGANIC CHEMISTRY I","ORGANIC CHEMISTRY PROBLEMS I","ORGANIC CHEMISTRY II"]
     , timeFilter =
         { start = 8 * 60
         , end = 19 * 60

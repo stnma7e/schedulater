@@ -1,9 +1,12 @@
 module Course exposing (..)
 
 import Dict
+import Tuple exposing (pair)
 import Array exposing (Array)
-import Json.Decode exposing (field, index, int, string, array, map2, map3, map5)
+import Json.Decode as D exposing (field, index, int, string, array, map2, map3, map5)
 import Maybe exposing (withDefault, andThen)
+
+import ClassTimes exposing (ClassTimes, getClassTimes)
 
 type alias CourseIndex = Int
 type alias ClassIndex = Int
@@ -16,7 +19,7 @@ type alias Section =
     , cap: Int
     , remaining: Int
     , instructor: String
-    , daytimes: String
+    , daytimes: ClassTimes
     }
 
 type alias Class = Array Section
@@ -67,7 +70,7 @@ findSection crn cd = cd.courses
                 Nothing -> Nothing )
         |> Array.filter isJust
         |> Array.foldl (\sectionIdx acc -> sectionIdx) Nothing
-        |> Maybe.map ((,) courseIdx)
+        |> Maybe.map (pair courseIdx)
     )
     |> Array.filter isJust
     |> Array.foldl (\courseInfo acc -> courseInfo) Nothing
@@ -87,11 +90,18 @@ decodeSection = map5 Section
     (field "cap" int)
     (field "remaining" int)
     (field "instructor" string)
-    (field "daytimes" string)
+    (field "daytimes" string
+        |> D.andThen parseClassTimes)
 decodeCourseTableData = map3 CourseTableData
     (index 0 string)
     (index 1 string)
     (index 2 string)
+
+parseClassTimes : String -> D.Decoder ClassTimes
+parseClassTimes daytimes =
+    case getClassTimes daytimes of
+        Just ct -> D.succeed ct
+        Nothing -> D.fail ""
 
 makeSched : CourseData -> Int -> List (String, Section)
 makeSched courses comboIndex =

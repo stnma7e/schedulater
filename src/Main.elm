@@ -4,6 +4,7 @@ import Debug exposing (log)
 import Html exposing (Html, button, div, text, input, table, tr, td, thead, tbody, label, span)
 import Html.Attributes exposing (placeholder, class, id, type_, value, disabled, title)
 import Html.Events exposing (onClick, onInput)
+import Browser
 import Http
 import Json.Decode exposing (string, list)
 import Array exposing (Array)
@@ -12,8 +13,10 @@ import Dict exposing (Dict)
 import Course exposing (..)
 import RequestFilter exposing (..)
 import RenderFilter exposing (..)
+import Combos exposing (..)
+import Solve exposing (..)
 
-main = Html.program
+main = Browser.element
     { init = init
     , view = view
     , update = update
@@ -31,15 +34,17 @@ subscriptions model = Sub.batch
     , endTime (\time -> RequestFilter <| NewEndTime time)
     ]
 
-init =
+init : () -> (Model, Cmd Msg)
+init _ =
     let model =
-        { calendar = CalendarData 0
-        , subjects = []
-        , requestFilters = defaultBody
-        , renderFilters = defaultRenderFilters
-        , addCourse = False
-        , requestFilterStatus = Modified
-        }
+            { calendar = CalendarData 0
+            , subjects = []
+            , requestFilters = defaultBody
+            , renderFilters = defaultRenderFilters
+            , addCourse = False
+            , courses = Array.empty
+            , requestFilterStatus = Modified
+            }
     in (model, Cmd.batch
         [ getScheds model
         , getSubjects
@@ -61,6 +66,7 @@ type alias Model =
     , requestFilters : ScheduleRequest
     , renderFilters : RenderFilter
     , addCourse: Bool
+    , courses: Array Course
     , requestFilterStatus: ScheduleStatus
     }
 
@@ -78,16 +84,16 @@ type Msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model = case msg of
-    RequestFilter msg ->
-        let requestFilters = RequestFilter.update msg model.requestFilters
+    RequestFilter msg1 ->
+        let requestFilters = RequestFilter.update msg1 model.requestFilters
         in ({model
             | requestFilters = requestFilters
             , requestFilterStatus = Modified
             }, Cmd.none)
 
-    RenderFilter msg ->
-        let renderFilters = RenderFilter.dispatch msg model.renderFilters
-            cmd = case msg of
+    RenderFilter msg1 ->
+        let renderFilters = RenderFilter.dispatch msg1 model.renderFilters
+            cmd = case msg1 of
                 SelectCourseSubject subject ->
                     getCourses subject
                 otherwise -> Cmd.none
@@ -98,25 +104,25 @@ update msg model = case msg of
 
     GetSubjects -> (model, getSubjects)
 
-    GetScheds -> ({ model | requestFilterStatus = Pending }, getScheds model)
-
     NewSubjects (Ok newSubjects) ->
         ({ model | subjects = newSubjects}, Cmd.none)
 
     NewSubjects (Err e) ->
-        let _ = log "ERROR (NewSubjects)" <| toString e
+        let _ = log "ERROR (NewSubjects)" <| Debug.toString e
         in (model, Cmd.none)
 
+    GetScheds -> ({ model | requestFilterStatus = Pending }, getScheds model)
+
     NewScheds (Ok newScheds) ->
-        let (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds))
+        let newScheds1 = solveCourses model.requestFilters newScheds.courses
+            (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds1))
         in ({ newModel
-            | calendar = CalendarData 0
-            , requestFilterStatus = Received
-            },
-            Cmd.batch [cmd, renderCurrentSched newModel])
+                | calendar = CalendarData 0
+                , requestFilterStatus = Received
+                }, Cmd.batch [cmd, renderCurrentSched newModel])
 
     NewScheds (Err e) ->
-        let _ = log "ERROR (NewScheds)" <| toString e
+        let _ = log "ERROR (NewScheds)" <| Debug.toString e
         in (model, Cmd.none)
 
     RenderCurrentSched cmd -> (model, Cmd.batch [cmd, renderCurrentSched model])
@@ -134,135 +140,157 @@ update msg model = case msg of
     ShowCourseSelector ->
         ({model | addCourse = not model.addCourse}, Cmd.none)
 
+getSubjects : Cmd Msg
+getSubjects = Http.get
+    { url = "/subjects"
+    , expect = Http.expectJson NewSubjects (list string)
+    }
+
+getCourses : Subject -> Cmd Msg
+getCourses sub = Http.get
+    { url = "/courses/" ++ sub
+    , expect = Http.expectJson (\x -> RenderFilter <| NewSubjectCourseList x) (list decodeCourseTableData)
+    }
+
+getScheds : Model -> Cmd Msg
+getScheds model = Http.post
+    { url = "/courses"
+    , body = Http.stringBody "application/json"
+        <| encodeScheduleRequest model.requestFilters
+    , expect = Http.expectJson NewScheds decodeCourseData
+    }
+
+renderCurrentSched : Model -> Cmd Msg
+renderCurrentSched model = sched <| makeSched
+    model.renderFilters.courseList
+    model.calendar.schedIndex
 
 view model =
     div [class "container"]
         [ div [class "columns"]
             [ div [class "column is-8"]
-                [ div [] <| List.map (\x -> x |> toString |> text)
-                    [ toString <| model.calendar.schedIndex
-                    , toString <| model.renderFilters.selectedSubject
-                    , toString <| model.renderFilters.courseList.schedCount
-                    , toString <| model.renderFilters.lockedClasses
-                    , toString <| model.renderFilters.mustUseCourses
-                    ]
+                [ debugInfo model
 
                 , div [id "calendar"] []
 
-                , div [class "columns"]
-                    [ div [class "column"]
-                        [ div
-                            [ class "button is-primary is-outlined schedButton"
-                            , onClick DecrementSched
-                            ]
-                            [text "Previous"]
-                        ]
-                    , div [class "column"]
-                        [ div
-                            [ class "button is-primary is-outlined schedButton"
-                            , onClick IncrementSched
-                            ]
-                            [text "Next"]
-                        ]
-                    ]
-                , button
-                    [ class <| "button is-success is-outlined" ++ " " ++
-                        case model.requestFilterStatus of
-                            Pending -> "is-loading"
-                            otherwise -> ""
-                    , id "goButton"
-                    , onClick GetScheds
-                    , disabled <| case model.requestFilterStatus of
-                        Received -> True
-                        otherwise -> False
-                    ]
-                    [text "Go"]
+                , nextPrevSchedButtons
+
+                , goButton model
 
                 , Html.hr [] []
 
-                , div []
-                    [ div [class "title"] [text "Customize"]
-                    , showFilter "Time"
-                        "What time do you want to start and finish your schedule?"
-                        <| div [class "columns"]
-                            [ showTimeFilter "Start: " "startTime" model.requestFilters.timeFilter.start
-                            , showTimeFilter "End: " "endTime" model.requestFilters.timeFilter.end
-                            ]
-
-                    , showFilter "Credits"
-                            "How many credit hours do you want to take?"
-                            <| div [class "columns"]
-                                [ div [class "column"]
-                                    [ span [class "title is-6"] [text "Min: "]
-                                    , input [type_ "number"
-                                            , value <| toString model.requestFilters.creditFilter.min
-                                            , onInput (\min -> RequestFilter <| NewMinHours
-                                                <| Result.withDefault model.requestFilters.creditFilter.min (String.toInt min))
-                                            ]
-                                            []
-                                    ]
-                                , div [class "column"]
-                                    [ span [class "title is-6"] [text "Max: "]
-                                    , input [type_ "number"
-                                            , value <| toString model.requestFilters.creditFilter.max
-                                            , onInput (\max -> RequestFilter <| NewMaxHours
-                                                <| Result.withDefault model.requestFilters.creditFilter.max (String.toInt max))
-                                            ]
-                                            []
-                                    ]
-                                ]
-
-                    , showFilter "Instructor"
-                        "Are there any instructors that you don't want to take?"
-                        <| div [] []
-                    ]
+                , filters model
                 ]
             , div [class "column"]
-                [ div
-                    [ onClick ShowCourseSelector
-                    , class <|"button is-primary schedButton" ++ " " ++
-                        if not model.addCourse
-                            then "is-outlined"
-                            else ""
-                    ]
-                    [text "Add courses"]
-                , if model.addCourse
-                    then courseSelection model.renderFilters.subjectSearchString model.subjects model.renderFilters.selectedSubjectCourses
-                    else div [] []
-
-                , div []
-                    [ div [class "tile is-ancestor"]
-                        [ div [class "tile is-parent is-vertical"]
-                           (selectedCoursesTiles model.requestFilters.courses model.renderFilters)
-                        ]
-                    ]
-                ]
+                <| courseSelector model
             ]
         ]
 
-getSubjects : Cmd Msg
-getSubjects = Http.send NewSubjects (Http.get "/subjects" (list string))
+debugInfo model =
+    div [] <| List.map text
+        [ String.fromInt <| model.calendar.schedIndex
+        , model.renderFilters.selectedSubject
+        , String.fromInt <| model.renderFilters.courseList.schedCount
+        -- , Debug.toString <| model.renderFilters.lockedClasses
+        -- , Debug.toString <| model.renderFilters.mustUseCourses
+        ]
 
-getCourses : Subject -> Cmd Msg
-getCourses sub = Http.send (\x -> RenderFilter <| NewSubjectCourseList x) (Http.get ("/courses/" ++ sub) (list decodeCourseTableData))
+nextPrevSchedButtons =
+    div [class "columns"]
+        [ div [class "column"]
+            [ div
+                [ class "button is-primary is-outlined schedButton"
+                , onClick DecrementSched
+                ]
+                [text "Previous"]
+            ]
+        , div [class "column"]
+            [ div
+                [ class "button is-primary is-outlined schedButton"
+                , onClick IncrementSched
+                ]
+                [text "Next"]
+            ]
+        ]
 
-getScheds : Model -> Cmd Msg
-getScheds model = Http.send NewScheds (Http.post "/courses"
-    (Http.stringBody "application/json"
-        <| encodeScheduleRequest model.requestFilters)
-    decodeCourseData)
+goButton model =
+    button
+        [ class <| "button is-success is-outlined" ++ " " ++
+            case model.requestFilterStatus of
+                Pending -> "is-loading"
+                otherwise -> ""
+        , id "goButton"
+        , onClick GetScheds
+        , disabled <| case model.requestFilterStatus of
+            Received -> True
+            otherwise -> False
+        ]
+        [text "Go"]
 
-renderCurrentSched : Model -> Cmd Msg
-renderCurrentSched model =
-    sched <| makeSched
-        model.renderFilters.courseList
-        model.calendar.schedIndex
+filters model =
+    div []
+        [ div [class "title"] [text "Customize"]
+        , showFilter "Time"
+            "What time do you want to start and finish your schedule?"
+            <| div [class "columns"]
+                [ showTimeFilter "Start: " "startTime" model.requestFilters.timeFilter.start
+                , showTimeFilter "End: " "endTime" model.requestFilters.timeFilter.end
+                ]
+
+        , showFilter "Credits"
+                "How many credit hours do you want to take?"
+                <| div [class "columns"]
+                    [ div [class "column"]
+                        [ span [class "title is-6"] [text "Min: "]
+                        , input [type_ "number"
+                                , value <| String.fromInt model.requestFilters.creditFilter.min
+                                , onInput (\min -> RequestFilter <| NewMinHours
+                                    <| Maybe.withDefault model.requestFilters.creditFilter.min (String.toInt min))
+                                ]
+                                []
+                        ]
+                    , div [class "column"]
+                        [ span [class "title is-6"] [text "Max: "]
+                        , input [type_ "number"
+                                , value <| String.fromInt model.requestFilters.creditFilter.max
+                                , onInput (\max -> RequestFilter <| NewMaxHours
+                                    <| Maybe.withDefault model.requestFilters.creditFilter.max (String.toInt max))
+                                ]
+                                []
+                        ]
+                    ]
+
+        , showFilter "Instructor"
+            "Are there any instructors that you don't want to take?"
+            <| div [] []
+        ]
+
+courseSelector model =
+    [ div
+        [ onClick ShowCourseSelector
+        , class <|"button is-primary schedButton" ++ " " ++
+            if not model.addCourse
+                then "is-outlined"
+                else ""
+        ]
+        [text "Add courses"]
+    , if model.addCourse
+        then courseSelection model.renderFilters.subjectSearchString model.subjects model.renderFilters.selectedSubjectCourses
+        else div [] []
+
+    , div []
+        [ div [class "tile is-ancestor"]
+            [ div [class "tile is-parent is-vertical"]
+               <| selectedCoursesTiles model.requestFilters.courses model.renderFilters
+            ]
+        ]
+    ]
 
 selectedCoursesTiles selectedCourses rf = selectedCourses
     |> List.map (\course ->
         let courseIdx = case Dict.get course rf.courseIndexMap of
-            Just c -> c
-            Nothing -> -1
+                Just c -> c
+                Nothing -> -1
         in div [class "box tile is-child"]
             [ text course
             , Html.br [] []
@@ -291,7 +319,7 @@ selectedCoursesTiles selectedCourses rf = selectedCourses
             , div []
                 (let maybeCrns = Dict.get courseIdx rf.lockedClasses
                         |> Maybe.andThen (\classIdx -> Array.get courseIdx rf.courseList.courses
-                            |> Maybe.andThen (\course -> Array.get classIdx course.classes
+                            |> Maybe.andThen (\course1 -> Array.get classIdx course1.classes
                                 |> Maybe.andThen (\sections -> Just (sections
                                     |> Array.map (\section -> section.crn)))))
                 in case maybeCrns of
@@ -313,7 +341,7 @@ selectedCoursesTiles selectedCourses rf = selectedCourses
                         , text "Locked In Section #'s"
                         , div []
                             <| Array.toList
-                            <| Array.map (\crn -> div [] [ text <| toString crn ] ) crns
+                            <| Array.map (\crn -> div [] [ text <| String.fromInt crn ] ) crns
                         ])
             ])
 
@@ -354,16 +382,16 @@ showSelectedSubjectCourses subjectSearchString selectedSubjectCourses =
                 ]
             , tbody []
                 (selectedSubjectCourses
-                    |> List.filter (\course -> course.title |> String.contains (String.toUpper subjectSearchString))
-                    |> List.map (\course ->
+                    |> List.filter (\course1 -> course1.title |> String.contains (String.toUpper subjectSearchString))
+                    |> List.map (\course1 ->
                         tr
                             [ class "courseRow"
-                            , onClick (RequestFilter (AddCourse course.title))
+                            , onClick (RequestFilter (AddCourse course1.title))
                             ]
 
-                            [ td [] [text <| course.title]
-                            , td [] [text <| course.courseNum]
-                            , td [] [text <| course.credits]
+                            [ td [] [text <| course1.title]
+                            , td [] [text <| course1.courseNum]
+                            , td [] [text <| course1.credits]
                             ]
                         )
                     )
