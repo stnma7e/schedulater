@@ -161,10 +161,9 @@ getScheds model = Http.post
     }
 
 renderCurrentSched : Model -> Cmd Msg
-renderCurrentSched model =
-    sched <| makeSched
-        model.renderFilters.courseList
-        model.calendar.schedIndex
+renderCurrentSched model = sched <| makeSched
+    model.renderFilters.courseList
+    model.calendar.schedIndex
 
 view model =
     div [class "container"]

@@ -36,14 +36,14 @@ runComboAndSolve sr courses combos valid =
             else runComboAndSolve sr courses nextCombos valid
 
 checkCombo : ScheduleRequest -> Array Course -> Combo -> Bool
-checkCombo s courses combo =
+checkCombo sr courses combo =
     let y = getComboSections courses combo
         x = withDefault True <| (y |> checkTimesCollide |> Maybe.map not)
-        z = checkCreditHours courses combo 12 15
+        z = checkCreditHours courses combo sr.creditFilter
     in z && x
 
-checkCreditHours : Array Course -> Combo -> Int -> Int -> Bool
-checkCreditHours courses combo min max =
+checkCreditHours : Array Course -> Combo -> CreditFilter -> Bool
+checkCreditHours courses combo cf =
     let l_courses = Array.toList courses
         l_combo = Array.toList combo
         courseCredits = List.map2 (\course comboIndex ->
@@ -53,16 +53,16 @@ checkCreditHours courses combo min max =
                     Nothing -> 1000
             else 0) l_courses l_combo
         sum = List.foldl (+) 0 courseCredits
-    in sum >= min && sum <= max
+    in sum >= cf.min && sum <= cf.max
 
 -- returns true if times collide
 checkTimesCollide : List (Maybe Section) -> Maybe Bool
 checkTimesCollide sections = case sections of
     [] -> Just False
     (section :: sx) ->
-        let classTimes = section |> andThen (\s -> getClassTimes s.daytimes)
+        let classTimes = section |> andThen (\s -> Just s.daytimes)
             allClassTimes = withDefault [] <| sequence
-                <| List.map (andThen (\s -> getClassTimes s.daytimes))
+                <| List.map (andThen (\s -> Just s.daytimes))
                 <| List.filter isJust sx
         in Maybe.map ((||) <| checkTimeConflicts classTimes allClassTimes)
             (checkTimesCollide sx)

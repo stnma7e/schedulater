@@ -48,7 +48,7 @@ export default class Calendar {
 
     transform_event_data(start, end, timezone, callback) {
         if (this.sched.length >= 1) {
-            let calendar_events = extract_event_data(this.sched);
+            let calendar_events = extract_events_from_object(this.sched);
 
             if (calendar_events.needsWeekend) {
                 $('#' + this.divId).fullCalendar('option', 'weekends', true)
@@ -65,57 +65,42 @@ export default class Calendar {
     }
 }
 
-function extract_event_data(events) {
+function extract_events_from_object(events) {
     let newEvents = {
         events: [],
         needsWeekend: false,
     }
 
-    for (let event of events) {
-        let daytimes = event.daytimes.split(" ");
-        for (let daytime of daytimes) {
-            let times = daytime.split("|");
-            let startEnd = times[0].split(",");
+    const days = [
+        (1 << 0), // M
+        (1 << 1), // T
+        (1 << 2), // W
+        (1 << 3), // R
+        (1 << 4), // F
+        (1 << 5), // S
+        (1 << 6), // U
+    ];
 
-            var startTime = startEnd[0].split(':');
-            var endTime = startEnd[1].split(':');
-            var startHours = startTime[0];
-            var startMins = startTime[1];
-            var endHours = endTime[0];
-            var endMins = endTime[1];
+    for (const event of events) {
+        for (const daytime of event.daytimes) {
+            for (var i = 0; i < 7; i++) {
+                var day = null;
+                const daysAnd = daytime.days & days[i];
+                if ((daytime.days & days[i]) == 0) {
+                    continue;
+                }
 
-            for (var i = 0; i < times[1].length; i++) {
-                let day = null;
-                switch (times[1][i]) {
-                    // mapping the day of the week to the day of the first week of
-                    // Jan, 2000 (which is how the calendar is set up)
-                    case "M":
-                        day = "3";
-                        break
-                    case "T":
-                        day = "4";
-                        break
-                    case "W":
-                        day = "5";
-                        break
-                    case "R":
-                        day = "6";
-                        break
-                    case "F":
-                        day = "7";
-                        break
-                    case "S":
-                        day = "8";
-                        newEvents.needsWeekend = true;
-                        break
-                    case "U":
-                        day = "9";
-                        newEvents.needsWeekend = true;
-                        break
-                };
+                day = i + 3;
+                if (i >= 5) {
+                    newEvents.needsWeekend = true;
+                }
 
                 let startDate = new Date('Jan ' + day + ', 2000')
                 let endDate = new Date('Jan ' + day + ', 2000')
+                const startHours = Math.floor(daytime.startEndTime.start / 60);
+                const startMins = daytime.startEndTime.start % 60;
+                const endHours = Math.floor(daytime.startEndTime.end / 60);
+                const endMins = daytime.startEndTime.end % 60;
                 startDate.setHours(parseInt(startHours));
                 startDate.setMinutes(parseInt(startMins));
                 endDate.setHours(parseInt(endHours));

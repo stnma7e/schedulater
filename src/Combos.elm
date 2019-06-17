@@ -17,9 +17,8 @@ incrementCombo c = incrementCombo_ c 0 False
 
 incrementCombo_ : Combos -> Int -> Bool -> Maybe Combos
 incrementCombo_ c i flip = checkDone c 0
-    |> andThen (\done ->
-        if done then
-            Nothing
+    |> andThen (\done -> if done
+        then Nothing
         else case incrementAtPosition i c of
             Just c1 -> if flip
                 then Just { c1 | current = zeroBefore (Array.toList c1.current) i }
