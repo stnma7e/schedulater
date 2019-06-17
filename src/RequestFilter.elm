@@ -7,11 +7,9 @@ import Json.Encode exposing (encode, object, list, string, int)
 
 import Course exposing (..)
 import Combos exposing (..)
+import ClassTimes exposing (StartEndTime)
 
-type alias TimeFilter =
-    { start: Int
-    , end: Int
-    }
+type alias TimeFilter = StartEndTime
 
 type alias CreditFilter =
     { min: Int

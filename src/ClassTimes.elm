@@ -20,6 +20,20 @@ type alias StartEndTime =
     }
 type alias Days = Int
 
+checkClassTimesCollide : ClassTimes -> ClassTimes -> Bool
+checkClassTimesCollide ct1 ct2 = List.foldl (||) False <| List.map2 (\ct11 ct22 ->
+    checkClassTimeConflict ct11 ct22) ct1 ct2
+
+-- returns true if conflict
+checkClassTimeConflict : ClassTime -> ClassTime -> Bool
+checkClassTimeConflict ct1 ct2 = if ((Bitwise.and ct1.days ct2.days) == 0)
+    then False
+    else not <| (ct1.startEndTime.end <= ct2.startEndTime.start)
+        || (ct1.startEndTime.start >= ct2.startEndTime.end)
+
+checkTimeRange : StartEndTime -> ClassTimes -> Bool
+checkTimeRange set ct = False
+
 getClassTimes : String -> Maybe ClassTimes
 getClassTimes s = case run classTimes s of
     Ok ct -> Just ct
@@ -82,14 +96,3 @@ daysMap = Dict.fromList <|
     , ('S', shiftLeftBy 5 1)
     , ('U', shiftLeftBy 6 1)
     ]
-
-checkClassTimesCollide : ClassTimes -> ClassTimes -> Bool
-checkClassTimesCollide ct1 ct2 = List.foldl (||) False <| List.map2 (\ct11 ct22 ->
-    checkClassTimeConflict ct11 ct22) ct1 ct2
-
--- returns true if conflict
-checkClassTimeConflict : ClassTime -> ClassTime -> Bool
-checkClassTimeConflict ct1 ct2 = if ((Bitwise.and ct1.days ct2.days) == 0)
-    then False
-    else not <| (ct1.startEndTime.end <= ct2.startEndTime.start)
-        || (ct1.startEndTime.start >= ct2.startEndTime.end)

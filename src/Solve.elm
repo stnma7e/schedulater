@@ -31,16 +31,23 @@ runComboAndSolve : ScheduleRequest -> Array Course -> Combos -> List (Combo) -> 
 runComboAndSolve sr courses combos valid =
     case incrementCombo combos of
         Nothing -> CourseData (List.length valid) courses (Array.fromList valid)
-        Just nextCombos -> if checkCombo sr courses combos.current
+        Just nextCombos -> if filterCombo sr courses combos.current
             then runComboAndSolve sr courses nextCombos (combos.current :: valid)
             else runComboAndSolve sr courses nextCombos valid
 
-checkCombo : ScheduleRequest -> Array Course -> Combo -> Bool
-checkCombo sr courses combo =
-    let y = getComboSections courses combo
-        x = withDefault True <| (y |> checkTimesCollide |> Maybe.map not)
-        z = checkCreditHours courses combo sr.creditFilter
-    in z && x
+filterCombo : ScheduleRequest -> Array Course -> Combo -> Bool
+filterCombo sr courses combo =
+    let sections = getComboSections courses combo
+        validTimes = checkTimes (withDefault []
+            <| sequence <| List.filter isJust sections) combo sr.timeFilter
+        noTimeCollision = withDefault True <|
+                (sections |> checkTimesCollide |> Maybe.map not)
+        validHours = checkCreditHours courses combo sr.creditFilter
+    in noTimeCollision && validHours
+
+checkTimes : List Section -> Combo -> TimeFilter -> Bool
+checkTimes sections combo tf = List.foldl (||) False
+    <| List.map (\s -> checkTimeRange tf s.daytimes) sections
 
 checkCreditHours : Array Course -> Combo -> CreditFilter -> Bool
 checkCreditHours courses combo cf =
