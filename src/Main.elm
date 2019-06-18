@@ -173,7 +173,7 @@ view model =
 
                 , div [id "calendar"] []
 
-                , nextPrevSchedButtons
+                , nextPrevSchedButtons model
 
                 , goButton model
 
@@ -188,28 +188,34 @@ view model =
 
 debugInfo model =
     div [] <| List.map text
-        [ String.fromInt <| model.calendar.schedIndex
-        , model.renderFilters.selectedSubject
-        , String.fromInt <| model.renderFilters.courseList.schedCount
+        [
         -- , Debug.toString <| model.renderFilters.lockedClasses
         -- , Debug.toString <| model.renderFilters.mustUseCourses
         ]
 
-nextPrevSchedButtons =
+nextPrevSchedButtons model =
     div [class "columns"]
-        [ div [class "column"]
-            [ div
-                [ class "button is-primary is-outlined schedButton"
+        [ div [class "column is-5"]
+            [ button
+                [ class <| "button is-primary is-outlined schedButton"
                 , onClick DecrementSched
-                ]
-                [text "Previous"]
+                , disabled <| model.calendar.schedIndex <= 0
+                ] [text "Previous"]
             ]
-        , div [class "column"]
-            [ div
-                [ class "button is-primary is-outlined schedButton"
+        , div [class "column is-2"]
+            [ div [ class "schedNumber" ]
+                [ text <| String.fromInt model.calendar.schedIndex ]
+            , div [ class "centering" ] [ text "of" ]
+            , div [ class "schedNumber" ]
+                [ text <| String.fromInt model.renderFilters.courseList.schedCount ]
+            ]
+        , div [class "column is-5"]
+            [ button
+                [ class <| "button is-primary is-outlined schedButton"
                 , onClick IncrementSched
-                ]
-                [text "Next"]
+                , disabled <| model.calendar.schedIndex >=
+                        model.renderFilters.courseList.schedCount
+                ] [text "Next"]
             ]
         ]
 
