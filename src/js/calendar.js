@@ -3,10 +3,14 @@ import fullCalendar from 'fullcalendar';
 export default class Calendar {
     constructor(divId, schedUpdateFunction, lockCourseIndex) {
         this.transform_event_data = this.transform_event_data.bind(this)
+        this.extract_events_from_object = this.extract_events_from_object.bind(this)
 
         this.class_colors = new Map()
         this.sched = [];
         this.divId = divId;
+
+        this.minHours = 7;
+        this.maxHours = 19;
 
         schedUpdateFunction.subscribe((newSched) => {
             this.sched = newSched.map(x => {
@@ -24,8 +28,8 @@ export default class Calendar {
 
         $('#' + divId).fullCalendar({
             defaultView: 'agendaWeek',
-            minTime: "7:00:00",
-            maxTime: "22:00:00",
+            minTime: this.minHours + ":00:00",
+            maxTime: this.maxHours + ":00:00",
             allDaySlot: false,
             header: false,
             weekends: false,
@@ -48,7 +52,7 @@ export default class Calendar {
 
     transform_event_data(start, end, timezone, callback) {
         if (this.sched.length >= 1) {
-            let calendar_events = extract_events_from_object(this.sched);
+            let calendar_events = this.extract_events_from_object(this.sched);
 
             if (calendar_events.needsWeekend) {
                 $('#' + this.divId).fullCalendar('option', 'weekends', true)
@@ -63,60 +67,68 @@ export default class Calendar {
             callback([])
         }
     }
-}
 
-function extract_events_from_object(events) {
-    let newEvents = {
-        events: [],
-        needsWeekend: false,
-    }
+    extract_events_from_object(events) {
+        let newEvents = {
+            events: [],
+            needsWeekend: false,
+        }
 
-    const days = [
-        (1 << 0), // M
-        (1 << 1), // T
-        (1 << 2), // W
-        (1 << 3), // R
-        (1 << 4), // F
-        (1 << 5), // S
-        (1 << 6), // U
-    ];
+        const days = [
+            (1 << 0), // M
+            (1 << 1), // T
+            (1 << 2), // W
+            (1 << 3), // R
+            (1 << 4), // F
+            (1 << 5), // S
+            (1 << 6), // U
+        ];
 
-    for (const event of events) {
-        for (const daytime of event.daytimes) {
-            for (var i = 0; i < 7; i++) {
-                var day = null;
-                const daysAnd = daytime.days & days[i];
-                if ((daytime.days & days[i]) == 0) {
-                    continue;
+        for (const event of events) {
+            for (const daytime of event.daytimes) {
+                for (var i = 0; i < 7; i++) {
+                    var day = null;
+                    const daysAnd = daytime.days & days[i];
+                    if ((daytime.days & days[i]) == 0) {
+                        continue;
+                    }
+
+                    day = i + 3;
+                    if (i >= 5) {
+                        newEvents.needsWeekend = true;
+                    }
+
+                    const startHours = Math.floor(daytime.startEndTime.start / 60);
+                    const startMins = daytime.startEndTime.start % 60;
+                    const endHours = Math.floor(daytime.startEndTime.end / 60);
+                    const endMins = daytime.startEndTime.end % 60;
+
+                    if (startHours < this.minHours*60) {
+                        this.minHours = startHours;
+                    }
+                    if (endHours + endMins > this.minHours*60) {
+                        this.minHours = Math.ceil((endHours + endMins) / 60);
+                    }
+
+                    let startDate = new Date('Jan ' + day + ', 2000');
+                    let endDate = new Date('Jan ' + day + ', 2000');
+                    startDate.setHours(parseInt(startHours));
+                    startDate.setMinutes(parseInt(startMins));
+                    endDate.setHours(parseInt(endHours));
+                    endDate.setMinutes(parseInt(endMins));
+
+                    newEvents.events.push({
+                        'id': event.crn,
+                        'title': event.title,
+                        'start': startDate,
+                        'end': endDate
+                    })
                 }
-
-                day = i + 3;
-                if (i >= 5) {
-                    newEvents.needsWeekend = true;
-                }
-
-                let startDate = new Date('Jan ' + day + ', 2000')
-                let endDate = new Date('Jan ' + day + ', 2000')
-                const startHours = Math.floor(daytime.startEndTime.start / 60);
-                const startMins = daytime.startEndTime.start % 60;
-                const endHours = Math.floor(daytime.startEndTime.end / 60);
-                const endMins = daytime.startEndTime.end % 60;
-                startDate.setHours(parseInt(startHours));
-                startDate.setMinutes(parseInt(startMins));
-                endDate.setHours(parseInt(endHours));
-                endDate.setMinutes(parseInt(endMins));
-
-                newEvents.events.push({
-                    'id': event.crn,
-                    'title': event.title,
-                    'start': startDate,
-                    'end': endDate
-                })
             }
         }
-    }
 
-    return newEvents;
+        return newEvents;
+    }
 }
 
 function colorize_events(events, color_map) {
