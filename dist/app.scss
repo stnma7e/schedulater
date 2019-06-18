@@ -54,6 +54,12 @@
     margin-top: 0.5em;
 }
 
+.schedNumber {
+    text-align: center;
+    font-size: 1.25em;
+    font-weight: bold;
+}
+
 .filterSection {
     margin: 1em;
 }
@@ -64,6 +70,11 @@
 
 .timePicker {
     width: 5em;
+}
+
+.centering {
+    width: 100%;
+    text-align: center;
 }
 
 @import "./jquery-clockpicker.min.css";
