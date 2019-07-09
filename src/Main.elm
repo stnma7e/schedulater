@@ -15,6 +15,9 @@ import RequestFilter exposing (..)
 import RenderFilter exposing (..)
 import Combos exposing (..)
 import Solve exposing (..)
+import CourseOff exposing (..)
+
+flip f a b = f b a
 
 main = Browser.element
     { init = init
@@ -41,15 +44,15 @@ init _ =
             , subjects = []
             , requestFilters = defaultBody
             , renderFilters = defaultRenderFilters
+            , courseOffData = defaultCourseOffData
             , addCourse = False
             , courses = Array.empty
             , requestFilterStatus = Modified
             }
     in (model, Cmd.batch
         [ getScheds model
-        , getSubjects
-        ]
-    )
+        , Cmd.map CourseOff getCourseOffSubjects
+        ])
 
 type alias CalendarData =
     { schedIndex : Int
@@ -65,6 +68,7 @@ type alias Model =
     , subjects : List Subject
     , requestFilters : ScheduleRequest
     , renderFilters : RenderFilter
+    , courseOffData : CourseOffData
     , addCourse: Bool
     , courses: Array Course
     , requestFilterStatus: ScheduleStatus
@@ -73,6 +77,7 @@ type alias Model =
 type Msg
     = RequestFilter RequestFilterMsg
     | RenderFilter RenderFilterMsg
+    | CourseOff CourseOffMsg
     | GetSubjects
     | GetScheds
     | NewSubjects (Result Http.Error (List Subject))
@@ -94,15 +99,24 @@ update msg model = case msg of
     RenderFilter msg1 ->
         let renderFilters = RenderFilter.dispatch msg1 model.renderFilters
             cmd = case msg1 of
-                SelectCourseSubject subject ->
-                    getCourses subject
+                SelectCourseSubject subject -> getCourses subject
                 otherwise -> Cmd.none
-        in {model | renderFilters = renderFilters
+            (model1, cmd1) = case msg1 of
+                SelectCourseSubject sub -> model
+                    |> update (CourseOff <| GetSubjectCourses sub)
+                otherwise -> (model, Cmd.none)
+        in {model1 | renderFilters = renderFilters
                   , calendar = CalendarData 0
-           }
-            |> update (RenderCurrentSched cmd)
+           } |> update (RenderCurrentSched (Cmd.batch [cmd, cmd1]))
 
-    GetSubjects -> (model, getSubjects)
+    CourseOff msg1 ->
+        let (courseOffData, cmd) = CourseOff.update msg1 model.courseOffData
+        in ({model
+            | courseOffData = courseOffData
+            }, Cmd.map CourseOff cmd)
+
+    GetSubjects -> -- (model, getSubjects)
+        model |> update (CourseOff CourseOff.GetSubjects)
 
     NewSubjects (Ok newSubjects) ->
         ({ model | subjects = newSubjects}, Cmd.none)
@@ -204,7 +218,7 @@ nextPrevSchedButtons model =
             ]
         , div [class "column is-2"]
             [ div [ class "schedNumber" ]
-                [ text <| String.fromInt model.calendar.schedIndex ]
+                [ text <| String.fromInt <| model.calendar.schedIndex + 1 ]
             , div [ class "centering" ] [ text "of" ]
             , div [ class "schedNumber" ]
                 [ text <| String.fromInt model.renderFilters.courseList.schedCount ]
@@ -281,7 +295,13 @@ courseSelector model =
         ]
         [text "Add courses"]
     , if model.addCourse
-        then courseSelection model.renderFilters.subjectSearchString model.subjects model.renderFilters.selectedSubjectCourses
+        then courseSelection
+                model.renderFilters.subjectSearchString
+                model.courseOffData.subjects
+                <| Maybe.withDefault [] <| Dict.get
+                    model.renderFilters.selectedSubject
+                    model.courseOffData.subjectCourses
+                -- model.renderFilters.selectedSubjectCourses
         else div [] []
 
     , div []
@@ -310,6 +330,29 @@ selectedCoursesTiles selectedCourses rf = selectedCourses
                 [text "Must use"]
             , div
                 [ onClick (RenderFilter <| PreviewCourse course)
+                , class <|"button courseButton is-outlined" ++ " " ++
+                    case rf.previewCourse of
+                        Nothing -> "is-white"
+                        Just courseIdx2 ->
+                            if courseIdx == courseIdx2
+                                then "is-primary"
+                                else "is-white"
+                , title "Preview"
+                ] [ text "👁" ]
+            , div
+                [ onClick (RequestFilter <| AddCourse course)
+                , class <|"button is-danger courseButton Xbutton is-outlined"
+                ]
+                [text "X"]
+            , selectedCrns rf courseIdx
+            ])
+
+selectedCrns rf courseIdx =
+    div [] <| Maybe.withDefault []
+        (flip Maybe.map (getCrnsFromCourseIdx rf courseIdx) (\crns ->
+            [ div
+                [ onClick (RenderFilter <| LockSection
+                    <| Array.foldl (\x acc -> if acc > 0 then acc else x) -1 crns)
                 , class <|"button courseButton" ++ " " ++
                     case rf.previewCourse of
                         Nothing -> "is-white"
@@ -318,59 +361,60 @@ selectedCoursesTiles selectedCourses rf = selectedCourses
                                 then "is-primary"
                                 else "is-white"
                 , title "Preview"
-                ]
-                [text "👁"]
-            , Html.br [] []
-            , Html.br [] []
-            , div []
-                (let maybeCrns = Dict.get courseIdx rf.lockedClasses
-                        |> Maybe.andThen (\classIdx -> Array.get courseIdx rf.courseList.courses
-                            |> Maybe.andThen (\course1 -> Array.get classIdx course1.classes
-                                |> Maybe.andThen (\sections -> Just (sections
-                                    |> Array.map (\section -> section.crn)))))
-                in case maybeCrns of
-                    Nothing -> []
-                    Just crns ->
-                        [ div
-                            [ onClick (RenderFilter <| LockSection
-                                <| Array.foldl (\x acc -> if acc > 0 then acc else x) -1 crns)
-                            , class <|"button courseButton" ++ " " ++
-                                case rf.previewCourse of
-                                    Nothing -> "is-white"
-                                    Just courseIdx2 ->
-                                        if courseIdx == courseIdx2
-                                            then "is-primary"
-                                            else "is-white"
-                            , title "Preview"
-                            ]
-                            [ text "🔓" ]
-                        , text "Locked In Section #'s"
-                        , div []
-                            <| Array.toList
-                            <| Array.map (\crn -> div [] [ text <| String.fromInt crn ] ) crns
-                        ])
-            ])
+                ] [ text "🔓" ]
+            , text "Locked In Section #'s"
+            , crnTiles crns
+            ]))
+
+getCrnsFromCourseIdx rf courseIdx =
+    Dict.get courseIdx rf.lockedClasses
+        |> Maybe.andThen (\classIdx -> Array.get courseIdx rf.courseList.courses
+            |> Maybe.andThen (\course1 -> Array.get classIdx course1.classes
+                |> Maybe.andThen (\sections -> Just (sections
+                    |> Array.map (\section -> section.crn)))))
+
+crnTiles crns =
+    div [ class "tile is-ancestor" ]
+        [ div [ class "tile is-parent" ]
+            [ div []
+                <| Array.toList
+                <| Array.map (\crn ->
+                        div [ class "tile is-parent" ]
+                        [ div [ class "box tile is-child crnTile" ]
+                            [ text <| String.fromInt crn ]
+                        ]
+                    ) crns
+            ]
+        ]
 
 courseSelection : String -> List Subject -> List CourseTableData -> Html Msg
 courseSelection subjectSearchString subjects selectedSubjectCourses =
     div []
         [ div [class "columns"]
-            [ div [class "column"] [input [placeholder "Filter" , onInput (\s -> RenderFilter <| SubjectSearchString s)] []]
-            , div [class "column"]
-                [ if List.length selectedSubjectCourses > 0
-                    then span [ class "button is-primary is-outlined backButton"
-                          , onClick (RenderFilter DeselectCourseSubject)
-                          ]
-                        [ text <| "Back" ]
-                    else span [] []
+            [ div [class "column"]
+                [input
+                    [placeholder "Filter"
+                    , onInput (\s -> RenderFilter <| SubjectSearchString s)
+                    ] []
                 ]
+            , if List.length selectedSubjectCourses > 0
+                then div [class "column"]
+                    [ span
+                        [ class "button is-primary is-outlined backButton"
+                        , onClick (RenderFilter DeselectCourseSubject)
+                        ] [ text "Back" ]
+                    ]
+                else span [] []
             ]
 
         , div [class "subjectSelection"]
             (if List.length selectedSubjectCourses < 1
                 then subjects
-                    |> List.filter (String.contains <| String.toUpper subjectSearchString)
-                    |> List.map (\subject -> div [onClick (RenderFilter <| SelectCourseSubject subject)] [text subject])
+                    |> List.filter (String.contains
+                            <| String.toUpper subjectSearchString)
+                    |> List.map (\subject ->
+                            div [onClick (RenderFilter <| SelectCourseSubject subject)]
+                                [text subject])
                 else showSelectedSubjectCourses subjectSearchString selectedSubjectCourses
             )
 
@@ -390,14 +434,13 @@ showSelectedSubjectCourses subjectSearchString selectedSubjectCourses =
                 (selectedSubjectCourses
                     |> List.filter (\course1 -> course1.title |> String.contains (String.toUpper subjectSearchString))
                     |> List.map (\course1 ->
-                        tr
-                            [ class "courseRow"
+                        tr  [ class "courseRow"
                             , onClick (RequestFilter (AddCourse course1.title))
                             ]
 
-                            [ td [] [text <| course1.title]
-                            , td [] [text <| course1.courseNum]
-                            , td [] [text <| course1.credits]
+                            [ td [] [text course1.title]
+                            , td [] [text course1.courseNum]
+                            , td [] [text course1.credits]
                             ]
                         )
                     )
