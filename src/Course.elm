@@ -41,6 +41,7 @@ type alias Ident =
     }
 
 emptyIdent = { internal = "", userFacing = "" }
+fakeIdent = Debug.todo ""
 
 type alias CourseData =
     { schedCount: Int

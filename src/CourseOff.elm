@@ -12,15 +12,14 @@ courseOffUrl = "https://soc.courseoff.com/gatech/terms/201901/"
 
 type CourseOffMsg
     = GetSubjects
-    | NewSubjects (Result Http.Error (List CourseOffSubject))
-    | GetSubjectCourses String
-    | NewSubjectCourses String (Result Http.Error (List CourseOffSubjectCourse))
+    | NewSubjects (Result Http.Error (List SubjectIdent))
+    | GetSubjectCourses SubjectIdent
+    | NewSubjectCourses SubjectIdent (Result Http.Error (List CourseOffSubjectCourse))
     | GetCourseInfo String String
     | NewCourseInfo String String (Result Http.Error (List CourseOffCourseInfo))
 
 type alias CourseOffData =
-    -- { subjects: List CourseOffSubject
-    { subjects: List String
+    { subjects: List SubjectIdent
     , subjectCourses: Dict String (List CourseTableData)
     , courses: Dict String Course
     }
@@ -35,28 +34,30 @@ update : CourseOffMsg -> CourseOffData -> (CourseOffData, Cmd CourseOffMsg)
 update msg data = case msg of
     GetSubjects -> (data, getCourseOffSubjects)
     NewSubjects (Ok newSubjects) ->
-        ({ data |  subjects = List.map (\s -> s.ident) newSubjects }, Cmd.none)
+        ({ data |  subjects = newSubjects }, Cmd.none)
     NewSubjects (Err e) ->
-        let _ = log "ERROR (CourseOff NewSubjects)" <| Debug.toString e
+        let _ = log "ERROR [CourseOff NewSubjects]" <| Debug.toString e
         in (data, Cmd.none)
 
-    GetSubjectCourses sub -> (data, getSubjectCourses sub)
-    NewSubjectCourses sub (Ok subCourses) ->
-        let newSubCourse = Dict.insert sub
-                (List.map subjectCourseToCourseTableData subCourses)
-                data.subjectCourses
-        in ({ data | subjectCourses = newSubCourse }, Cmd.none)
-    NewSubjectCourses sub (Err err) ->
-        Debug.todo ""
+    -- GetSubjectCourses sub -> (data, getSubjectCourses sub)
+    -- NewSubjectCourses sub (Ok subCourses) ->
+    --     let newSubCourse = Dict.insert sub
+    --             (List.map subjectCourseToCourseTableData subCourses)
+    --             data.subjectCourses
+    --     in ({ data | subjectCourses = newSubCourse }, Cmd.none)
+    -- NewSubjectCourses sub (Err err) ->
+    --     Debug.todo ""
+    --
+    -- GetCourseInfo sub courseNum -> (data, getCourseInfo sub courseNum)
+    -- NewCourseInfo sub courseNum (Ok courseInfo) ->
+    --     let newCourseInfo = Dict.insert (sub ++ courseNum)
+    --             (courseOffToMine sub courseNum courseInfo)
+    --             data.courses
+    --     in ({ data | courses = newCourseInfo }, Cmd.none)
+    -- NewCourseInfo sub courseNum (Err err) ->
+    --     Debug.todo ""
 
-    GetCourseInfo sub courseNum -> (data, getCourseInfo sub courseNum)
-    NewCourseInfo sub courseNum (Ok courseInfo) ->
-        let newCourseInfo = Dict.insert (sub ++ courseNum)
-                (courseOffToMine sub courseNum courseInfo)
-                data.courses
-        in ({ data | courses = newCourseInfo }, Cmd.none)
-    NewCourseInfo sub courseNum (Err err) ->
-        Debug.todo ""
+    otherwise -> (data, Cmd.none)
 
 getCourseOffSubjects : Cmd CourseOffMsg
 getCourseOffSubjects = Http.get
@@ -64,49 +65,44 @@ getCourseOffSubjects = Http.get
     , expect = Http.expectJson NewSubjects (list decodeCourseOffSubject)
     }
 
-getSubjectCourses : String -> Cmd CourseOffMsg
-getSubjectCourses sub = Http.get
-    { url = courseOffUrl ++ "majors/" ++ sub ++ "/courses"
-    , expect = Http.expectJson (NewSubjectCourses sub)
-        <| list decodeCourseOffSubjectCourse
-    }
+-- getSubjectCourses : String -> Cmd CourseOffMsg
+-- getSubjectCourses sub = Http.get
+--     { url = courseOffUrl ++ "majors/" ++ sub ++ "/courses"
+--     , expect = Http.expectJson (NewSubjectCourses sub)
+--         <| list decodeCourseOffSubjectCourse
+--     }
+-- --
+-- -- getCourseInfo : String -> String -> Cmd CourseOffMsg
+-- -- getCourseInfo sub courseNum = Http.get
+-- --     { url = courseOffUrl ++ "majors/" ++ sub ++ "/courses/" ++ courseNum ++ "/sections"
+-- --     , expect = Http.expectJson (NewCourseInfo sub courseNum)
+-- --         <| list decodeCourseOffCourseInfo
+-- --     }
+-- --
+-- -- subjectCourseToCourseTableData : CourseOffSubjectCourse -> CourseTableData
+-- -- subjectCourseToCourseTableData csc =
+-- --     { courseNum = csc.ident
+-- --     , title = csc.name
+-- --     , credits = "0.000"
+-- --     }
 
-getCourseInfo : String -> String -> Cmd CourseOffMsg
-getCourseInfo sub courseNum = Http.get
-    { url = courseOffUrl ++ "majors/" ++ sub ++ "/courses/" ++ courseNum ++ "/sections"
-    , expect = Http.expectJson (NewCourseInfo sub courseNum)
-        <| list decodeCourseOffCourseInfo
-    }
-
-subjectCourseToCourseTableData : CourseOffSubjectCourse -> CourseTableData
-subjectCourseToCourseTableData csc =
-    { courseNum = csc.ident
-    , title = csc.name
-    , credits = "0.000"
-    }
-
-courseOffToMine : String -> String -> List CourseOffCourseInfo -> Course
-courseOffToMine sub courseNum info =
-    let classes = Array.fromList <| List.map (\coc -> coc.timeslots
-                    |> Array.fromList
-                    |> Array.map courseOffTimeslotToSection) info
-        credits = List.head info
-                |> Maybe.map (\c -> c.credits)
-                |> Maybe.withDefault "0"
-    in { subject = sub
-       , courseNum = courseNum
-       , credits = credits
-       , title = courseNum
-       , classes = classes
-       }
+-- courseOffToMine : String -> String -> List CourseOffCourseInfo -> Course
+-- courseOffToMine sub courseNum info =
+--     let classes = Array.fromList <| List.map (\coc -> coc.timeslots
+--                     |> Array.fromList
+--                     |> Array.map courseOffTimeslotToSection) info
+--         credits = List.head info
+--                 |> Maybe.map (\c -> c.credits)
+--                 |> Maybe.withDefault "0"
+--     in { subject = sub
+--        , courseNum = courseNum
+--        , credits = credits
+--        , title = courseNum
+--        , classes = classes
+--        }
 
 courseOffTimeslotToSection : Timeslot -> Section
 courseOffTimeslotToSection ts = Debug.todo ""
-
-type alias CourseOffSubject =
-    { ident: String
-    , name: String
-    }
 
 type alias CourseOffSubjectCourse =
     { ident: String
@@ -133,7 +129,7 @@ type alias Timeslot =
     , day: String
     }
 
-decodeCourseOffSubject = map2 CourseOffSubject
+decodeCourseOffSubject = map2 Ident
     (field "ident" string)
     (field "name" string)
 

@@ -92,7 +92,7 @@ type Msg
     | ShowCourseSelector
 
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg model = case msg of
+update msg model = case Debug.log "" msg of
     RequestFilter msg1 ->
         let requestFilters = RequestFilter.update msg1 model.requestFilters
         in ({model
@@ -102,27 +102,23 @@ update msg model = case msg of
 
     RenderFilter msg1 ->
         let renderFilters = RenderFilter.dispatch msg1 model.renderFilters
-            cmd = case msg1 of
-                SelectCourseSubject subject -> getCourses subject
-                otherwise -> Cmd.none
-            (model1, cmd1) = case msg1 of
-                SelectCourseSubject sub -> model
-                    |> update (CourseOff <| GetSubjectCourses sub)
-                otherwise -> (model, Cmd.none)
-        in {model1 | renderFilters = renderFilters
+        in {model | renderFilters = renderFilters
                   , calendar = CalendarData 0
-           } |> update (RenderCurrentSched (Cmd.batch [cmd, cmd1]))
+           } |> update (RenderCurrentSched Cmd.none)
 
     CourseOff msg1 ->
         let (courseOffData, cmd) = CourseOff.update msg1 model.courseOffData
-        in ({model
-            | courseOffData = courseOffData
-            }, Cmd.map CourseOff cmd)
+        in ({model | courseOffData = courseOffData}, Cmd.map CourseOff cmd)
 
     CourseSelector msg1 ->
         let courseSelector1 = CourseSelector.update msg1 model.courseSelector
-        in ({model | courseSelector = courseSelector1}
-            , Cmd.none)
+            newModel = {model | courseSelector = courseSelector1}
+        in case msg1 of
+            CourseAdded course -> newModel
+                |> update (RequestFilter <| AddCourse emptyIdent)
+            SelectSubject subjectIdent -> newModel
+                |> update (CourseOff <| GetSubjectCourses subjectIdent)
+            otherwise -> (newModel, Cmd.none)
 
     GetSubjects -> -- (model, getSubjects)
         model |> update (CourseOff CourseOff.GetSubjects)
@@ -307,7 +303,7 @@ courseSelector model =
         [text "Add courses"]
     , if model.addCourse
         then Html.map CourseSelector
-            <| CourseSelector.view model.courseSelector [ { internal= "asdf", userFacing = "afds"}]
+            <| CourseSelector.view model.courseSelector model.courseOffData.subjects
         else div [] []
     , div []
         [ div [class "tile is-ancestor"]
