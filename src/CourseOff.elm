@@ -19,7 +19,7 @@ type CourseOffMsg
 
 type alias CourseOffData =
     { subjects: List SubjectIdent
-    , courses: Dict (IdentCmp, IdentCmp) Course
+    , courses: CourseDict
     }
 
 defaultCourseOffData =

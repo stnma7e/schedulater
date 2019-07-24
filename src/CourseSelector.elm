@@ -3,6 +3,7 @@ module CourseSelector exposing (..)
 import Html exposing (Html, button, div, text, input, table, tr, td, thead, tbody, label, span)
 import Html.Attributes exposing (placeholder, class, id, type_, value, disabled, title)
 import Html.Events exposing (onClick, onInput)
+import Dict exposing (..)
 
 import Course exposing (..)
 import RequestFilter exposing (..)
@@ -16,13 +17,11 @@ type CourseSelectorMsg
 type alias CourseSelector =
     { subjectSearchString: String
     , selectedSubject: SubjectIdent
-    , selectedSubjectCourses: List Course
     }
 
 defaultCourseSelector =
     { subjectSearchString = ""
     , selectedSubject = emptyIdent
-    , selectedSubjectCourses = []
     }
 
 update : CourseSelectorMsg -> CourseSelector -> CourseSelector
@@ -34,15 +33,12 @@ update msg cs = case msg of
         { cs | selectedSubject = s, subjectSearchString = "" }
 
     DeselectSubject ->
-        { cs
-            | selectedSubject = emptyIdent
-            , selectedSubjectCourses = []
-        }
+        { cs | selectedSubject = emptyIdent, subjectSearchString = "" }
 
     otherwise -> cs
 
-view : CourseSelector -> List SubjectIdent -> Html CourseSelectorMsg
-view cs subjects =
+view : CourseSelector -> List SubjectIdent -> CourseDict -> Html CourseSelectorMsg
+view cs subjects courses =
     div []
         [ div [class "columns"]
             [ div [class "column"]
@@ -63,6 +59,7 @@ view cs subjects =
 
         , div [class "subjectSelection"]
             (if cs.selectedSubject == emptyIdent
+                -- show available subjects
                 then subjects
                     |> List.filter (\subject -> String.contains
                             (String.toLower cs.subjectSearchString)
@@ -70,15 +67,21 @@ view cs subjects =
                     |> List.map (\subject ->
                             div [onClick (SelectSubject subject)]
                                 [text subject.userFacing])
-                else showSelectedSubjectCourses
-                        cs.subjectSearchString
-                        cs.selectedSubjectCourses
+
+                -- show subject's courses
+                else let selectedSubjectCourses = courses
+                            |> Dict.filter (\(subCmp, _) _ ->
+                                cs.selectedSubject == cmp2Ident subCmp)
+                            |> values
+                    in showSelectedSubjectCourses
+                            cs.subjectSearchString
+                            selectedSubjectCourses
             )
 
         , Html.hr [] []
         ]
 
-showSelectedSubjectCourses subjectSearchString selectedSubjectCourses =
+showSelectedSubjectCourses courseSearchString selectedSubjectCourses =
     [ div []
         [ table [class "table is-narrow is-hoverable courseSelectionTable"]
             [ thead []
@@ -88,7 +91,8 @@ showSelectedSubjectCourses subjectSearchString selectedSubjectCourses =
                 ]
             , tbody []
                 (selectedSubjectCourses
-                    |> List.filter (\course1 -> course1.title |> String.contains (String.toUpper subjectSearchString))
+                    |> List.filter (\course1 -> String.toLower course1.title
+                        |> String.contains (String.toLower courseSearchString))
                     |> List.map (\course1 ->
                         tr  [ class "courseRow"
                             , onClick (CourseAdded course1)

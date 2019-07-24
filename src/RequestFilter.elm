@@ -23,10 +23,10 @@ type RequestFilterMsg
     | NewMinHours Int
     | NewStartTime String
     | NewEndTime String
-    | AddCourse CourseIdent
+    | AddCourse Course
 
 type alias ScheduleRequest =
-    { courses: List CourseIdent
+    { courses: List Course
     , timeFilter: TimeFilter
     , creditFilter: CreditFilter
     , instructorFilter: InstructorFilter
@@ -99,7 +99,7 @@ timeFromString time =
 
 encodeScheduleRequest : ScheduleRequest -> String
 encodeScheduleRequest sr = encode 0 <| object
-    [ ("courses", list string <| List.map (\s -> s.internal) sr.courses)
+    [ ("courses", list string []) -- <| List.map (\s -> s.internal) sr.courses)
     , ("time_filter", object
         [ ("start", int sr.timeFilter.start)
         , ("end", int sr.timeFilter.end)
@@ -115,7 +115,7 @@ encodeScheduleRequest sr = encode 0 <| object
     ]
 
 defaultBody =
-    { courses = [] 
+    { courses = []
     , timeFilter =
         { start = 8 * 60
         , end = 19 * 60

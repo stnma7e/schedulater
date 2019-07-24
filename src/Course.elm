@@ -1,6 +1,6 @@
 module Course exposing (..)
 
-import Dict
+import Dict exposing (Dict)
 import Tuple exposing (pair)
 import Array exposing (Array)
 import Json.Decode as D exposing (field, index, int, string, array, map2, map3, map5)
@@ -40,6 +40,8 @@ type alias Ident =
     , userFacing: String
     }
 type alias IdentCmp = (String, String)
+
+type alias CourseDict = Dict (IdentCmp, IdentCmp) Course
 
 emptyIdent = { internal = "", userFacing = "" }
 fakeIdent = Debug.todo ""
