@@ -22,6 +22,7 @@ type alias Section =
     , daytimes: ClassTimes
     }
 
+-- a list of sections of a course that occur at the same time
 type alias Class = Array Section
 
 type alias Course =
@@ -31,6 +32,15 @@ type alias Course =
     , title: String
     , classes: Array Class
     }
+
+type alias CourseIdent = Ident
+type alias SubjectIdent = Ident
+type alias Ident =
+    { internal: String
+    , userFacing: String
+    }
+
+emptyIdent = { internal = "", userFacing = "" }
 
 type alias CourseData =
     { schedCount: Int

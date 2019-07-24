@@ -16,6 +16,7 @@ import RenderFilter exposing (..)
 import Combos exposing (..)
 import Solve exposing (..)
 import CourseOff exposing (..)
+import CourseSelector exposing (..)
 
 flip f a b = f b a
 
@@ -45,6 +46,7 @@ init _ =
             , requestFilters = defaultBody
             , renderFilters = defaultRenderFilters
             , courseOffData = defaultCourseOffData
+            , courseSelector = defaultCourseSelector
             , addCourse = False
             , courses = Array.empty
             , requestFilterStatus = Modified
@@ -69,6 +71,7 @@ type alias Model =
     , requestFilters : ScheduleRequest
     , renderFilters : RenderFilter
     , courseOffData : CourseOffData
+    , courseSelector: CourseSelector
     , addCourse: Bool
     , courses: Array Course
     , requestFilterStatus: ScheduleStatus
@@ -78,6 +81,7 @@ type Msg
     = RequestFilter RequestFilterMsg
     | RenderFilter RenderFilterMsg
     | CourseOff CourseOffMsg
+    | CourseSelector CourseSelectorMsg
     | GetSubjects
     | GetScheds
     | NewSubjects (Result Http.Error (List Subject))
@@ -114,6 +118,11 @@ update msg model = case msg of
         in ({model
             | courseOffData = courseOffData
             }, Cmd.map CourseOff cmd)
+
+    CourseSelector msg1 ->
+        let courseSelector1 = CourseSelector.update msg1 model.courseSelector
+        in ({model | courseSelector = courseSelector1}
+            , Cmd.none)
 
     GetSubjects -> -- (model, getSubjects)
         model |> update (CourseOff CourseOff.GetSubjects)
@@ -202,7 +211,9 @@ view model =
 
 debugInfo model =
     div [] <| List.map text
-        [
+        [ Debug.toString <| model.renderFilters
+        , Debug.toString <| model.requestFilters
+        , Debug.toString <| model.courseSelector
         -- , Debug.toString <| model.renderFilters.lockedClasses
         -- , Debug.toString <| model.renderFilters.mustUseCourses
         ]
@@ -295,19 +306,13 @@ courseSelector model =
         ]
         [text "Add courses"]
     , if model.addCourse
-        then courseSelection
-                model.renderFilters.subjectSearchString
-                model.courseOffData.subjects
-                <| Maybe.withDefault [] <| Dict.get
-                    model.renderFilters.selectedSubject
-                    model.courseOffData.subjectCourses
-                -- model.renderFilters.selectedSubjectCourses
+        then Html.map CourseSelector
+            <| CourseSelector.view model.courseSelector [ { internal= "asdf", userFacing = "afds"}]
         else div [] []
-
     , div []
         [ div [class "tile is-ancestor"]
             [ div [class "tile is-parent is-vertical"]
-               <| selectedCoursesTiles model.requestFilters.courses model.renderFilters
+               [] -- <| selectedCoursesTiles model.requestFilters.courses model.renderFilters
             ]
         ]
     ]
@@ -340,7 +345,7 @@ selectedCoursesTiles selectedCourses rf = selectedCourses
                 , title "Preview"
                 ] [ text "👁" ]
             , div
-                [ onClick (RequestFilter <| AddCourse course)
+                [ onClick (RequestFilter <| AddCourse { internal= "asdf", userFacing= "asdf"})
                 , class <|"button is-danger courseButton Xbutton is-outlined"
                 ]
                 [text "X"]
@@ -387,66 +392,65 @@ crnTiles crns =
             ]
         ]
 
-courseSelection : String -> List Subject -> List CourseTableData -> Html Msg
-courseSelection subjectSearchString subjects selectedSubjectCourses =
-    div []
-        [ div [class "columns"]
-            [ div [class "column"]
-                [input
-                    [placeholder "Filter"
-                    , onInput (\s -> RenderFilter <| SubjectSearchString s)
-                    ] []
-                ]
-            , if List.length selectedSubjectCourses > 0
-                then div [class "column"]
-                    [ span
-                        [ class "button is-primary is-outlined backButton"
-                        , onClick (RenderFilter DeselectCourseSubject)
-                        ] [ text "Back" ]
-                    ]
-                else span [] []
-            ]
+-- courseSelection : String -> List Subject -> List CourseTableData -> Html Msg
+-- courseSelection subjectSearchString subjects selectedSubjectCourses =
+--     div []
+--         [ div [class "columns"]
+--             [ div [class "column"]
+--                 [input
+--                     [placeholder "Filter"
+--                     , onInput (\s -> RenderFilter <| SubjectSearchString s)
+--                     ] []
+--                 ]
+--             , if List.length selectedSubjectCourses > 0
+--                 then div [class "column"]
+--                     [ span
+--                         [ class "button is-primary is-outlined backButton"
+--                         , onClick (RenderFilter DeselectCourseSubject)
+--                         ] [ text "Back" ]
+--                     ]
+--                 else span [] []
+--             ]
+--
+--         , div [class "subjectSelection"]
+--             (if List.length selectedSubjectCourses < 1
+--                 then subjects
+--                     |> List.filter (String.contains
+--                             <| String.toUpper subjectSearchString)
+--                     |> List.map (\subject ->
+--                             div [onClick (RenderFilter <| SelectCourseSubject subject)]
+--                                 [text subject])
+--                 else showSelectedSubjectCourses subjectSearchString selectedSubjectCourses
+--             )
+--
+--         , Html.hr [] []
+--         ]
 
-        , div [class "subjectSelection"]
-            (if List.length selectedSubjectCourses < 1
-                then subjects
-                    |> List.filter (String.contains
-                            <| String.toUpper subjectSearchString)
-                    |> List.map (\subject ->
-                            div [onClick (RenderFilter <| SelectCourseSubject subject)]
-                                [text subject])
-                else showSelectedSubjectCourses subjectSearchString selectedSubjectCourses
-            )
-
-        , Html.hr [] []
-        ]
-
-showSelectedSubjectCourses : String -> List CourseTableData -> List (Html Msg)
-showSelectedSubjectCourses subjectSearchString selectedSubjectCourses =
-    [ div []
-        [ table [class "table is-narrow is-hoverable courseSelectionTable"]
-            [ thead []
-                [ td [] [text "Course Title"]
-                , td [] [text "Course #"]
-                , td [] [text "Credit Hours"]
-                ]
-            , tbody []
-                (selectedSubjectCourses
-                    |> List.filter (\course1 -> course1.title |> String.contains (String.toUpper subjectSearchString))
-                    |> List.map (\course1 ->
-                        tr  [ class "courseRow"
-                            , onClick (RequestFilter (AddCourse course1.title))
-                            ]
-
-                            [ td [] [text course1.title]
-                            , td [] [text course1.courseNum]
-                            , td [] [text course1.credits]
-                            ]
-                        )
-                    )
-            ]
-        ]
-    ]
+-- showSelectedSubjectCourses subjectSearchString selectedSubjectCourses =
+--     [ div []
+--         [ table [class "table is-narrow is-hoverable courseSelectionTable"]
+--             [ thead []
+--                 [ td [] [text "Course Title"]
+--                 , td [] [text "Course #"]
+--                 , td [] [text "Credit Hours"]
+--                 ]
+--             , tbody []
+--                 (selectedSubjectCourses
+--                     |> List.filter (\course1 -> course1.title |> String.contains (String.toUpper subjectSearchString))
+--                     |> List.map (\course1 ->
+--                         tr  [ class "courseRow"
+--                             , onClick (RequestFilter (AddCourse course1))
+--                             ]
+--
+--                             [ td [] [text course1.title]
+--                             , td [] [text course1.courseNum]
+--                             , td [] [text course1.credits]
+--                             ]
+--                         )
+--                     )
+--             ]
+--         ]
+--     ]
 
 showFilter : String -> String -> Html Msg -> Html Msg
 showFilter title subtitle body =
