@@ -314,46 +314,48 @@ courseSelector model =
     , div []
         [ div [class "tile is-ancestor"]
             [ div [class "tile is-parent is-vertical"]
-               [] -- <| selectedCoursesTiles model.courseOff.courses model.renderFilters
+                <| selectedCoursesTiles
+                    model.requestFilters.courses
+                    model.renderFilters
             ]
         ]
     ]
 
--- selectedCoursesTiles selectedCourses rf = selectedCourses
---     |> List.map (\course ->
---         let courseIdx = case Dict.get course rf.courseIndexMap of
---                 Just c -> c
---                 Nothing -> -1
---         in div [class "box tile is-child"]
---             [ text course
---             , Html.br [] []
---             , div
---                 [ onClick (RenderFilter <| MustUseCourse course)
---                 , class <|"button is-primary courseButton" ++ " " ++
---                     if List.member courseIdx rf.mustUseCourses
---                         then ""
---                         else "is-outlined"
---                 ]
---                 [text "Must use"]
---             , div
---                 [ onClick (RenderFilter <| PreviewCourse course)
---                 , class <|"button courseButton is-outlined" ++ " " ++
---                     case rf.previewCourse of
---                         Nothing -> "is-white"
---                         Just courseIdx2 ->
---                             if courseIdx == courseIdx2
---                                 then "is-primary"
---                                 else "is-white"
---                 , title "Preview"
---                 ] [ text "👁" ]
---             , div
---                 [ onClick (RequestFilter <| AddCourse { internal= "asdf", userFacing= "asdf"})
---                 , class <|"button is-danger courseButton Xbutton is-outlined"
---                 ]
---                 [text "X"]
---             , selectedCrns rf courseIdx
---             ])
---
+selectedCoursesTiles selectedCourses rf = selectedCourses
+    |> List.map (\course ->
+        let courseIdx = case Dict.get course.title rf.courseIndexMap of
+                Just c -> c
+                Nothing -> -1
+        in div [class "box tile is-child"]
+            [ text course.title
+            , Html.br [] []
+            , div
+                [ onClick (RenderFilter <| MustUseCourse course.title)
+                , class <|"button is-primary courseButton" ++ " " ++
+                    if List.member courseIdx rf.mustUseCourses
+                        then ""
+                        else "is-outlined"
+                ]
+                [text "Must use"]
+            , div
+                [ onClick (RenderFilter <| PreviewCourse course.title)
+                , class <|"button courseButton is-outlined" ++ " " ++
+                    case rf.previewCourse of
+                        Nothing -> "is-white"
+                        Just courseIdx2 ->
+                            if courseIdx == courseIdx2
+                                then "is-primary"
+                                else "is-white"
+                , title "Preview"
+                ] [ text "👁" ]
+            , div
+                [ onClick (RequestFilter <| AddCourse course)
+                , class <|"button is-danger courseButton Xbutton is-outlined"
+                ]
+                [text "X"]
+            , selectedCrns rf courseIdx
+            ])
+
 selectedCrns rf courseIdx =
     div [] <| Maybe.withDefault []
         (flip Maybe.map (getCrnsFromCourseIdx rf courseIdx) (\crns ->
