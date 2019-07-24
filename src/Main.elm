@@ -210,6 +210,7 @@ debugInfo model =
         [ Debug.toString <| model.renderFilters
         , Debug.toString <| model.requestFilters
         , Debug.toString <| model.courseSelector
+        , Debug.toString <| Dict.size model.courseOffData.courses
         -- , Debug.toString <| model.renderFilters.lockedClasses
         -- , Debug.toString <| model.renderFilters.mustUseCourses
         ]
@@ -308,7 +309,7 @@ courseSelector model =
     , div []
         [ div [class "tile is-ancestor"]
             [ div [class "tile is-parent is-vertical"]
-               [] -- <| selectedCoursesTiles model.requestFilters.courses model.renderFilters
+               [] -- <| selectedCoursesTiles model.courseOff.courses model.renderFilters
             ]
         ]
     ]

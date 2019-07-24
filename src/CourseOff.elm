@@ -14,19 +14,16 @@ type CourseOffMsg
     = GetSubjects
     | NewSubjects (Result Http.Error (List SubjectIdent))
     | GetSubjectCourses SubjectIdent
-    | NewSubjectCourses SubjectIdent (Result Http.Error (List CourseOffSubjectCourse))
-    | GetCourseInfo String String
-    | NewCourseInfo String String (Result Http.Error (List CourseOffCourseInfo))
+    | NewSubjectCourses SubjectIdent (Result Http.Error (List CourseIdent))
+    | NewCourseInfo SubjectIdent CourseIdent (Result Http.Error (List CourseOffSection))
 
 type alias CourseOffData =
     { subjects: List SubjectIdent
-    , subjectCourses: Dict String (List CourseTableData)
-    , courses: Dict String Course
+    , courses: Dict (IdentCmp, IdentCmp) Course
     }
 
 defaultCourseOffData =
     { subjects = []
-    , subjectCourses = Dict.empty
     , courses = Dict.empty
     }
 
@@ -39,25 +36,20 @@ update msg data = case msg of
         let _ = log "ERROR [CourseOff NewSubjects]" <| Debug.toString e
         in (data, Cmd.none)
 
-    -- GetSubjectCourses sub -> (data, getSubjectCourses sub)
-    -- NewSubjectCourses sub (Ok subCourses) ->
-    --     let newSubCourse = Dict.insert sub
-    --             (List.map subjectCourseToCourseTableData subCourses)
-    --             data.subjectCourses
-    --     in ({ data | subjectCourses = newSubCourse }, Cmd.none)
-    -- NewSubjectCourses sub (Err err) ->
-    --     Debug.todo ""
-    --
-    -- GetCourseInfo sub courseNum -> (data, getCourseInfo sub courseNum)
-    -- NewCourseInfo sub courseNum (Ok courseInfo) ->
-    --     let newCourseInfo = Dict.insert (sub ++ courseNum)
-    --             (courseOffToMine sub courseNum courseInfo)
-    --             data.courses
-    --     in ({ data | courses = newCourseInfo }, Cmd.none)
-    -- NewCourseInfo sub courseNum (Err err) ->
-    --     Debug.todo ""
+    GetSubjectCourses sub -> (data, getSubjectCourses sub)
+    NewSubjectCourses sub (Ok subCourses) ->
+        let courseInfoCmds = List.map (getCourseInfo sub) subCourses
+        in (data, Cmd.batch courseInfoCmds)
+    NewSubjectCourses sub (Err err) ->
+        Debug.todo ""
 
-    otherwise -> (data, Cmd.none)
+    NewCourseInfo sub course (Ok courseInfo) ->
+        let newCourseInfo = Dict.insert (ident2Cmp sub, ident2Cmp course)
+                (courseOffToMine sub course courseInfo)
+                data.courses
+        in ({ data | courses = newCourseInfo }, Cmd.none)
+    NewCourseInfo sub courseNum (Err err) ->
+        Debug.todo ""
 
 getCourseOffSubjects : Cmd CourseOffMsg
 getCourseOffSubjects = Http.get
@@ -65,41 +57,36 @@ getCourseOffSubjects = Http.get
     , expect = Http.expectJson NewSubjects (list decodeCourseOffSubject)
     }
 
--- getSubjectCourses : String -> Cmd CourseOffMsg
--- getSubjectCourses sub = Http.get
---     { url = courseOffUrl ++ "majors/" ++ sub ++ "/courses"
---     , expect = Http.expectJson (NewSubjectCourses sub)
---         <| list decodeCourseOffSubjectCourse
---     }
--- --
--- -- getCourseInfo : String -> String -> Cmd CourseOffMsg
--- -- getCourseInfo sub courseNum = Http.get
--- --     { url = courseOffUrl ++ "majors/" ++ sub ++ "/courses/" ++ courseNum ++ "/sections"
--- --     , expect = Http.expectJson (NewCourseInfo sub courseNum)
--- --         <| list decodeCourseOffCourseInfo
--- --     }
--- --
--- -- subjectCourseToCourseTableData : CourseOffSubjectCourse -> CourseTableData
--- -- subjectCourseToCourseTableData csc =
--- --     { courseNum = csc.ident
--- --     , title = csc.name
--- --     , credits = "0.000"
--- --     }
+getSubjectCourses : SubjectIdent -> Cmd CourseOffMsg
+getSubjectCourses sub = Http.get
+    { url = courseOffUrl ++ "majors/" ++ sub.internal ++ "/courses"
+    , expect = Http.expectJson (NewSubjectCourses sub)
+        <| list decodeCourseOffSubjectCourse
+    }
 
--- courseOffToMine : String -> String -> List CourseOffCourseInfo -> Course
--- courseOffToMine sub courseNum info =
---     let classes = Array.fromList <| List.map (\coc -> coc.timeslots
---                     |> Array.fromList
---                     |> Array.map courseOffTimeslotToSection) info
---         credits = List.head info
---                 |> Maybe.map (\c -> c.credits)
---                 |> Maybe.withDefault "0"
---     in { subject = sub
---        , courseNum = courseNum
---        , credits = credits
---        , title = courseNum
---        , classes = classes
---        }
+getCourseInfo : SubjectIdent -> CourseIdent -> Cmd CourseOffMsg
+getCourseInfo sub course = Http.get
+    { url = courseOffUrl ++ "majors/" ++ sub.internal ++ "/courses/"
+            ++ course.internal ++ "/sections"
+    , expect = Http.expectJson (NewCourseInfo sub course)
+        <| list decodeCourseOffCourseInfo
+    }
+
+courseOffToMine : SubjectIdent -> CourseIdent -> List CourseOffSection -> Course
+courseOffToMine sub course info =
+    let classes = Array.fromList []
+        -- Array.fromList <| List.map (\coc -> coc.timeslots
+        --             |> Array.fromList
+        --             |> Array.map courseOffTimeslotToSection) info
+        credits = List.head info
+                |> Maybe.map (\c -> String.fromInt c.credits)
+                |> Maybe.withDefault "0"
+    in { subject = sub.userFacing
+       , courseNum = course.internal
+       , credits = credits
+       , title = course.userFacing
+       , classes = classes
+       }
 
 courseOffTimeslotToSection : Timeslot -> Section
 courseOffTimeslotToSection ts = Debug.todo ""
@@ -109,10 +96,10 @@ type alias CourseOffSubjectCourse =
     , name: String
     }
 
-type alias CourseOffCourseInfo =
+type alias CourseOffSection =
     { callNumber: Int
-    , credits: String
-    , ident: String
+    , credits: Int
+    , section: String
     , timeslots: List Timeslot
     , instructor: Instructor
     }
@@ -129,17 +116,15 @@ type alias Timeslot =
     , day: String
     }
 
-decodeCourseOffSubject = map2 Ident
+decodeCourseOffSubject = decodeCourseOffXIdent
+decodeCourseOffSubjectCourse = decodeCourseOffXIdent
+decodeCourseOffXIdent = map2 Ident
     (field "ident" string)
     (field "name" string)
 
-decodeCourseOffSubjectCourse = map2 CourseOffSubjectCourse
-    (field "ident" string)
-    (field "name" string)
-
-decodeCourseOffCourseInfo = map5 CourseOffCourseInfo
+decodeCourseOffCourseInfo = map5 CourseOffSection
     (field "call_number" int)
-    (field "credits" string)
+    (field "credits" int)
     (field "ident" string)
     (field "timeslots" (list decodeTimeslot))
     (field "instructor"

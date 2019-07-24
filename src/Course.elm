@@ -39,9 +39,12 @@ type alias Ident =
     { internal: String
     , userFacing: String
     }
+type alias IdentCmp = (String, String)
 
 emptyIdent = { internal = "", userFacing = "" }
 fakeIdent = Debug.todo ""
+ident2Cmp ident = (ident.internal, ident.userFacing)
+cmp2Ident (internal, userFacing) = { internal = internal, userFacing = userFacing }
 
 type alias CourseData =
     { schedCount: Int
