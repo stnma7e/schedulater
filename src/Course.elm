@@ -64,10 +64,10 @@ extractCourses : Subject -> CourseData -> Array Course
 extractCourses sub cd = cd.courses
     |> Array.filter (\c -> c.subject == String.toUpper sub)
 
-findCourse : String -> CourseData -> Maybe CourseIndex
-findCourse title cd = cd.courses
-    |> Array.indexedMap (\courseIdx course ->
-        if course.title == title
+findCourseIndex : Course -> CourseData -> Maybe CourseIndex
+findCourseIndex course cd = cd.courses
+    |> Array.indexedMap (\courseIdx other ->
+        if course == other
             then Just courseIdx
             else Nothing
         )

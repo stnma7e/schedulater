@@ -13,9 +13,6 @@ type alias RenderFilter =
     { courseList: CourseData
     , originalCombos: Array Sched
     , courseIndexMap : Dict String CourseIndex
-    , subjectSearchString: String
-    , selectedSubject: Subject
-    , selectedSubjectCourses: List CourseTableData
     , lockedClasses: Dict CourseIndex ClassIndex
     , mustUseCourses: List CourseIndex
     , previewCourse: Maybe CourseIndex
@@ -25,23 +22,16 @@ defaultRenderFilters =
     { courseList = CourseData 0 Array.empty Array.empty
     , originalCombos = Array.empty
     , courseIndexMap = Dict.empty
-    , subjectSearchString = ""
-    , selectedSubject = ""
-    , selectedSubjectCourses = []
     , lockedClasses = Dict.empty
     , mustUseCourses = []
     , previewCourse = Nothing
     }
 
 type RenderFilterMsg
-    = SubjectSearchString String
-    | SelectCourseSubject String
-    | DeselectCourseSubject
-    | LockSection Int
-    | NewSubjectCourseList (Result Http.Error (List CourseTableData))
+    = LockSection Int
     | NewCourses CourseData
-    | PreviewCourse String
-    | MustUseCourse String
+    | PreviewCourse Course
+    | MustUseCourse Course
 
 -- dispatch receives events and decides whether the filter must be updated
 --      if no change can be made (an error occured, etc)
@@ -54,25 +44,6 @@ dispatch = update
 
 update : RenderFilterMsg -> RenderFilter -> RenderFilter
 update msg rf = case msg of
-    NewSubjectCourseList (Ok data) ->
-        {rf | selectedSubjectCourses = data}
-
-    NewSubjectCourseList (Err e) ->
-        let _ = log "ERROR (NewSubjectCourseList)" <| Debug.toString e
-        in rf
-
-    SubjectSearchString f ->
-        { rf | subjectSearchString = f }
-
-    SelectCourseSubject s ->
-        { rf | selectedSubject = s, subjectSearchString = "" }
-
-    DeselectCourseSubject ->
-        { rf
-            | selectedSubject = ""
-            , selectedSubjectCourses = []
-        }
-
     NewCourses courses ->
             let courseIndexMap = courses.courses
                     |> flip Array.foldl (0, Dict.empty) (\course (i, dict) ->
@@ -84,18 +55,18 @@ update msg rf = case msg of
                     , courseIndexMap = courseIndexMap
                 } |> updateCourses
 
-    PreviewCourse courseTitle ->
-        let newPreview = case findCourse courseTitle rf.courseList of
-                Nothing -> log "courseTitle not found for preview" Nothing
+    PreviewCourse course ->
+        let newPreview = case findCourseIndex course rf.courseList of
+                Nothing -> log "course not found for preview" Nothing
                 Just courseIdx -> if Just courseIdx == rf.previewCourse
                         then Nothing
                         else Just courseIdx
         in { rf | previewCourse = newPreview }
             |> updateCourses
 
-    MustUseCourse courseTitle ->
-        case findCourse courseTitle rf.courseList of
-            Nothing -> log "courseTitle not found for mustUse" rf
+    MustUseCourse course ->
+        case findCourseIndex course rf.courseList of
+            Nothing -> log "course not found for mustUse" rf
             Just courseIdx ->
                 let newMustUseCourses = if List.member courseIdx rf.mustUseCourses
                         then List.filter ((/=) courseIdx) rf.mustUseCourses

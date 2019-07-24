@@ -102,9 +102,11 @@ update msg model = case Debug.log "" msg of
 
     RenderFilter msg1 ->
         let renderFilters = RenderFilter.dispatch msg1 model.renderFilters
-        in {model | renderFilters = renderFilters
-                  , calendar = CalendarData 0
-           } |> update (RenderCurrentSched Cmd.none)
+        in { model
+                | renderFilters = renderFilters
+                , calendar = CalendarData 0
+                }
+           |> update (RenderCurrentSched Cmd.none)
 
     CourseOff msg1 ->
         let (courseOffData, cmd) = CourseOff.update msg1 model.courseOffData
@@ -120,8 +122,8 @@ update msg model = case Debug.log "" msg of
                 |> update (CourseOff <| GetSubjectCourses subjectIdent)
             otherwise -> (newModel, Cmd.none)
 
-    GetSubjects -> -- (model, getSubjects)
-        model |> update (CourseOff CourseOff.GetSubjects)
+    GetSubjects -> model
+        |> update (CourseOff CourseOff.GetSubjects)
 
     NewSubjects (Ok newSubjects) ->
         ({ model | subjects = newSubjects}, Cmd.none)
@@ -130,7 +132,19 @@ update msg model = case Debug.log "" msg of
         let _ = log "ERROR (NewSubjects)" <| Debug.toString e
         in (model, Cmd.none)
 
-    GetScheds -> ({ model | requestFilterStatus = Pending }, getScheds model)
+    GetScheds ->
+        let newModel = { model | requestFilterStatus = Pending }
+            newScheds = solveCourses model.requestFilters
+                    <| Array.fromList
+                    <| Dict.values model.courseOffData.courses
+            (newModel1, cmd) = newModel
+                |> update (RenderFilter <| NewCourses newScheds)
+
+        in ({ newModel1
+                | calendar = CalendarData 0
+                , requestFilterStatus = Received
+                }
+            , Cmd.batch [cmd, renderCurrentSched newModel])
 
     NewScheds (Ok newScheds) ->
         let newScheds1 = solveCourses model.requestFilters newScheds.courses
@@ -138,7 +152,8 @@ update msg model = case Debug.log "" msg of
         in ({ newModel
                 | calendar = CalendarData 0
                 , requestFilterStatus = Received
-                }, Cmd.batch [cmd, renderCurrentSched newModel])
+                }
+            , Cmd.batch [cmd, renderCurrentSched newModel])
 
     NewScheds (Err e) ->
         let _ = log "ERROR (NewScheds)" <| Debug.toString e
@@ -159,18 +174,18 @@ update msg model = case Debug.log "" msg of
     ShowCourseSelector ->
         ({model | addCourse = not model.addCourse}, Cmd.none)
 
-getSubjects : Cmd Msg
-getSubjects = Http.get
-    { url = "/subjects"
-    , expect = Http.expectJson NewSubjects (list string)
-    }
-
-getCourses : Subject -> Cmd Msg
-getCourses sub = Http.get
-    { url = "/courses/" ++ sub
-    , expect = Http.expectJson (\x -> RenderFilter <| NewSubjectCourseList x) (list decodeCourseTableData)
-    }
-
+-- getSubjects : Cmd Msg
+-- getSubjects = Http.get
+--     { url = "/subjects"
+--     , expect = Http.expectJson NewSubjects (list string)
+--     }
+--
+-- getCourses : Subject -> Cmd Msg
+-- getCourses sub = Http.get
+--     { url = "/courses/" ++ sub
+--     , expect = Http.expectJson (\x -> RenderFilter <| NewSubjectCourseList x) (list decodeCourseTableData)
+--     }
+--
 getScheds : Model -> Cmd Msg
 getScheds model = Http.post
     { url = "/courses"
@@ -211,8 +226,8 @@ debugInfo model =
         , Debug.toString <| model.requestFilters
         , Debug.toString <| model.courseSelector
         , Debug.toString <| Dict.size model.courseOffData.courses
-        -- , Debug.toString <| model.renderFilters.lockedClasses
-        -- , Debug.toString <| model.renderFilters.mustUseCourses
+        , Debug.toString <| model.renderFilters.lockedClasses
+        , Debug.toString <| model.renderFilters.mustUseCourses
         ]
 
 nextPrevSchedButtons model =
@@ -330,7 +345,7 @@ selectedCoursesTiles selectedCourses rf = selectedCourses
             [ text course.title
             , Html.br [] []
             , div
-                [ onClick (RenderFilter <| MustUseCourse course.title)
+                [ onClick (RenderFilter <| MustUseCourse course)
                 , class <|"button is-primary courseButton" ++ " " ++
                     if List.member courseIdx rf.mustUseCourses
                         then ""
@@ -338,7 +353,7 @@ selectedCoursesTiles selectedCourses rf = selectedCourses
                 ]
                 [text "Must use"]
             , div
-                [ onClick (RenderFilter <| PreviewCourse course.title)
+                [ onClick (RenderFilter <| PreviewCourse course)
                 , class <|"button courseButton is-outlined" ++ " " ++
                     case rf.previewCourse of
                         Nothing -> "is-white"
