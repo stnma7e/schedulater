@@ -7,6 +7,7 @@ import Dict exposing (Dict)
 import Debug exposing (log)
 
 import Course exposing (..)
+import ClassTimes exposing (..)
 
 courseOffUrl = "https://soc.courseoff.com/gatech/terms/201901/"
 
@@ -73,12 +74,9 @@ getCourseInfo sub course = Http.get
     }
 
 courseOffToMine : SubjectIdent -> CourseIdent -> List CourseOffSection -> Course
-courseOffToMine sub course info =
-    let classes = Array.fromList []
-        -- Array.fromList <| List.map (\coc -> coc.timeslots
-        --             |> Array.fromList
-        --             |> Array.map courseOffTimeslotToSection) info
-        credits = List.head info
+courseOffToMine sub course sections =
+    let classes = Array.fromList [Array.fromList <| List.map courseOffSectionToSection sections]
+        credits = List.head sections
                 |> Maybe.map (\c -> String.fromInt c.credits)
                 |> Maybe.withDefault "0"
     in { subject = sub.userFacing
@@ -88,8 +86,24 @@ courseOffToMine sub course info =
        , classes = classes
        }
 
-courseOffTimeslotToSection : Timeslot -> Section
-courseOffTimeslotToSection ts = Debug.todo ""
+courseOffSectionToSection : CourseOffSection -> Section
+courseOffSectionToSection section =
+    { crn = section.crn
+    , cap = 0
+    , remaining = 0
+    , instructor = section.instructor.lname
+    , daytimes = List.map timeslotToClassTime section.timeslots
+    }
+
+timeslotToClassTime : Timeslot -> ClassTime
+timeslotToClassTime ts =
+    { days = convertDayStringToInt ts.day
+        |> Maybe.withDefault 0
+    , startEndTime =
+        { start = ts.startTime
+        , end = ts.endTime
+        }
+    }
 
 type alias CourseOffSubjectCourse =
     { ident: String
@@ -97,7 +111,7 @@ type alias CourseOffSubjectCourse =
     }
 
 type alias CourseOffSection =
-    { callNumber: Int
+    { crn: Int
     , credits: Int
     , section: String
     , timeslots: List Timeslot
