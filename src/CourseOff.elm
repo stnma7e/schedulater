@@ -5,6 +5,7 @@ import Json.Decode exposing (int, string, list, field, map2, map5, map4)
 import Array
 import Dict exposing (Dict)
 import Debug exposing (log)
+import Maybe exposing (andThen, withDefault)
 
 import Course exposing (..)
 import ClassTimes exposing (..)
@@ -75,7 +76,10 @@ getCourseInfo sub course = Http.get
 
 courseOffToMine : SubjectIdent -> CourseIdent -> List CourseOffSection -> Course
 courseOffToMine sub course sections =
-    let classes = Array.fromList [Array.fromList <| List.map courseOffSectionToSection sections]
+    let classes = sections
+                |> List.map courseOffSectionToSection
+                |> collapseSectionsToClasses []
+                |> Array.fromList
         credits = List.head sections
                 |> Maybe.map (\c -> String.fromInt c.credits)
                 |> Maybe.withDefault "0"
@@ -85,6 +89,23 @@ courseOffToMine sub course sections =
        , title = course.userFacing
        , classes = classes
        }
+
+collapseSectionsToClasses : List Class -> List Section -> List Class
+collapseSectionsToClasses classes sections =
+    case sections of
+        [] -> []
+        (s :: ss) ->
+            let (matchingClasses, different) = List.partition
+                    (\c -> withDefault False
+                        <| Maybe.map (\c1 -> s.daytimes == c1.daytimes)
+                        <| List.head
+                        <| Array.toList c)
+                    classes
+                matchingClasses1 = case matchingClasses of
+                    [] -> Array.fromList [s]
+                    [a] -> Array.push s a
+                    otherwise -> Debug.todo ""
+            in [matchingClasses1] ++ different
 
 courseOffSectionToSection : CourseOffSection -> Section
 courseOffSectionToSection section =

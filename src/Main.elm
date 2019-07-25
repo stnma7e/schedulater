@@ -222,12 +222,12 @@ view model =
 
 debugInfo model =
     div [] <| List.map text
-        [ Debug.toString <| model.renderFilters
-        , Debug.toString <| model.requestFilters
-        , Debug.toString <| model.courseSelector
-        , Debug.toString <| Dict.size model.courseOffData.courses
-        , Debug.toString <| model.renderFilters.lockedClasses
-        , Debug.toString <| model.renderFilters.mustUseCourses
+        [-- [ Debug.toString <| model.renderFilters
+        -- , Debug.toString <| model.requestFilters
+        -- , Debug.toString <| model.courseSelector
+        -- , Debug.toString <| Dict.size model.courseOffData.courses
+        -- , Debug.toString <| model.renderFilters.lockedClasses
+        -- , Debug.toString <| model.renderFilters.mustUseCourses
         ]
 
 nextPrevSchedButtons model =
