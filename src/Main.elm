@@ -92,7 +92,7 @@ type Msg
     | ShowCourseSelector
 
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg model = case Debug.log "" msg of
+update msg model = case msg of
     RequestFilter msg1 ->
         let requestFilters = RequestFilter.update msg1 model.requestFilters
         in ({model
@@ -223,7 +223,7 @@ view model =
 debugInfo model =
     div [] <| List.map text
         [-- [ Debug.toString <| model.renderFilters
-        -- , Debug.toString <| model.requestFilters
+         Debug.toString <| model.requestFilters
         -- , Debug.toString <| model.courseSelector
         -- , Debug.toString <| Dict.size model.courseOffData.courses
         -- , Debug.toString <| model.renderFilters.lockedClasses

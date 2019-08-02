@@ -51,7 +51,8 @@ update msg data = case msg of
                 data.courses
         in ({ data | courses = newCourseInfo }, Cmd.none)
     NewCourseInfo sub courseNum (Err err) ->
-        Debug.todo ""
+        let x = Debug.log "" err
+        in (data, Cmd.none) 
 
 getCourseOffSubjects : Cmd CourseOffMsg
 getCourseOffSubjects = Http.get

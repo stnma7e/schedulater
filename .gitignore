@@ -1,5 +1,4 @@
 node_modules
-dist/bundle*
 classes.db
 sched.profile
 elm-stuff

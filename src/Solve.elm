@@ -19,13 +19,18 @@ sequence mss = case mss of
         (\x -> sequence ms |> andThen
             (\xs -> Just (x::xs)))
 
+isJust x = case x of
+    Nothing -> False
+    Just _ -> True
+
 solveCourses : ScheduleRequest -> Array Course -> CourseData
 solveCourses sr courses =
-    let currentCombo = Array.repeat (Array.length courses) 0
-        initialCombo = Array.repeat (Array.length courses) 0
-        maxCombo = log "max" <| Array.map (\c -> c.classes |> Array.length) courses
+    let filteredCourses = Array.filter (\c -> List.member c sr.courses) courses
+        currentCombo = Array.repeat (Array.length filteredCourses) 0
+        initialCombo = Array.repeat (Array.length filteredCourses) 0
+        maxCombo = log "max" <| Array.map (\c -> c.classes |> Array.length) filteredCourses
         combos = Combos initialCombo maxCombo
-    in runComboAndSolve sr courses combos []
+    in runComboAndSolve sr filteredCourses combos []
 
 runComboAndSolve : ScheduleRequest -> Array Course -> Combos -> List (Combo) -> CourseData
 runComboAndSolve sr courses combos valid =
@@ -83,14 +88,11 @@ checkTimeConflicts ct cts = withDefault False <| (ct |> andThen (\ct1 ->
 getComboSections : Array Course -> Combo -> List (Maybe Section)
 getComboSections courses combo =
     let comboSections = flip Array.indexedMap combo
-            <| \i -> getIthSectionOfCourse <| Array.get i courses
+            (\courseIdx sectionIdx -> let course = Array.get courseIdx courses
+                in getIthSectionOfCourse course sectionIdx)
     in Array.toList comboSections
 
 getIthSectionOfCourse : Maybe Course -> ClassIndex -> Maybe Section
 getIthSectionOfCourse c i = c
     |> andThen (\x -> Array.get (i - 1) x.classes)
     |> andThen (Array.get 0)
-
-isJust x = case x of
-    Nothing -> False
-    Just _ -> True
