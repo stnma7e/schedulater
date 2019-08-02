@@ -36,8 +36,8 @@ runComboAndSolve : ScheduleRequest -> Array Course -> Combos -> List (Combo) -> 
 runComboAndSolve sr courses combos valid =
     case incrementCombo combos of
         Nothing -> CourseData (List.length valid) courses (Array.fromList valid)
-        Just nextCombos -> if filterCombo sr courses combos.current
-            then runComboAndSolve sr courses nextCombos (combos.current :: valid)
+        Just nextCombos -> if filterCombo sr courses nextCombos.current
+            then runComboAndSolve sr courses nextCombos (nextCombos.current :: valid)
             else runComboAndSolve sr courses nextCombos valid
 
 filterCombo : ScheduleRequest -> Array Course -> Combo -> Bool
