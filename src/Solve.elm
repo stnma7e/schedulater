@@ -47,12 +47,13 @@ filterCombo sr courses combo =
             <| sequence <| List.filter isJust sections) combo sr.timeFilter
         noTimeCollision = withDefault True <|
                 (sections |> checkTimesCollide |> Maybe.map not)
-        validHours = checkCreditHours courses combo sr.creditFilter
-    in noTimeCollision && validHours
+        validCredits = checkCreditHours courses combo sr.creditFilter
+    in validCredits && validTimes && noTimeCollision
 
 checkTimes : List Section -> Combo -> TimeFilter -> Bool
-checkTimes sections combo tf = List.foldl (||) False
-    <| List.map (\s -> checkTimeRange tf s.daytimes) sections
+checkTimes sections combo tf = sections
+    |> List.map (\s -> timeRangeValid tf s.daytimes)
+    |> List.foldl (&&) True
 
 checkCreditHours : Array Course -> Combo -> CreditFilter -> Bool
 checkCreditHours courses combo cf =

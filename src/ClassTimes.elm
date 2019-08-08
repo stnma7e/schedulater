@@ -21,8 +21,8 @@ type alias StartEndTime =
 type alias Days = Int
 
 checkClassTimesCollide : ClassTimes -> ClassTimes -> Bool
-checkClassTimesCollide ct1 ct2 = List.foldl (||) False <| List.map2 (\ct11 ct22 ->
-    checkClassTimeConflict ct11 ct22) ct1 ct2
+checkClassTimesCollide ct1 ct2 = List.foldl (||) False
+    <| List.map2 (\ct11 ct22 -> checkClassTimeConflict ct11 ct22) ct1 ct2
 
 -- returns true if conflict
 checkClassTimeConflict : ClassTime -> ClassTime -> Bool
@@ -31,8 +31,11 @@ checkClassTimeConflict ct1 ct2 = if ((Bitwise.and ct1.days ct2.days) == 0)
     else not <| (ct1.startEndTime.end <= ct2.startEndTime.start)
         || (ct1.startEndTime.start >= ct2.startEndTime.end)
 
-checkTimeRange : StartEndTime -> ClassTimes -> Bool
-checkTimeRange set ct = False
+timeRangeValid : StartEndTime -> ClassTimes -> Bool
+timeRangeValid set ct = ct
+    |> List.map (\ct1 -> ct1.startEndTime.start >= set.start
+        && ct1.startEndTime.end <= set.end)
+    |> List.foldl (&&) True
 
 getClassTimes : String -> Maybe ClassTimes
 getClassTimes s = case run classTimes s of

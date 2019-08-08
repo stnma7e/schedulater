@@ -94,7 +94,7 @@ courseOffToMine sub course sections =
 collapseSectionsToClasses : List Class -> List Section -> List Class
 collapseSectionsToClasses classes sections =
     case sections of
-        [] -> []
+        [] -> classes
         (s :: ss) ->
             let (matchingClasses, different) = List.partition
                     (\c -> withDefault False
@@ -106,7 +106,7 @@ collapseSectionsToClasses classes sections =
                     [] -> Array.fromList [s]
                     [a] -> Array.push s a
                     otherwise -> Debug.todo ""
-            in [matchingClasses1] ++ different
+            in collapseSectionsToClasses ([matchingClasses1] ++ different) ss
 
 courseOffSectionToSection : CourseOffSection -> Section
 courseOffSectionToSection section =
