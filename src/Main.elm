@@ -1,8 +1,8 @@
 port module Main exposing (main)
 
 import Debug exposing (log)
-import Html exposing (Html, button, div, text, input, table, tr, td, thead, tbody, label, span, progress)
-import Html.Attributes as HA exposing (placeholder, class, id, type_, value, disabled, title, value)
+import Html exposing (Html, button, div, text, input, table, tr, td, thead, tbody, label, span, progress, p)
+import Html.Attributes as HA exposing (placeholder, class, id, type_, value, disabled, title)
 import Html.Events exposing (onClick, onInput)
 import Browser
 import Process
@@ -12,13 +12,25 @@ import Json.Decode exposing (string, list)
 import Array exposing (Array)
 import Dict exposing (Dict)
 
-import Course exposing (..)
-import RequestFilter exposing (..)
-import RenderFilter exposing (..)
-import Combos exposing (..)
-import Solve exposing (..)
-import CourseOff exposing (..)
-import CourseSelector exposing (..)
+import Msg exposing (Msg(..))
+import Course exposing (Course, Subject, Section, makeSched, decodeCourseData)
+import Solve exposing (SolverState, solveCourses)
+import CourseSelector exposing (CourseSelectorMsg(..), defaultCourseSelector)
+import RequestFilter exposing
+    ( ScheduleRequest
+    , RequestFilterMsg(..)
+    , defaultBody
+    , showTime
+    , encodeScheduleRequest
+    )
+import RenderFilter exposing (RenderFilterMsg(..), defaultRenderFilters)
+import CourseOff exposing
+    ( CourseOffData
+    , CourseOffMsg(..)
+    , defaultCourseOffData
+    , getCourseOffSubjects
+    )
+import Modal exposing (modal)
 
 flip f a b = f b a
 
@@ -53,6 +65,7 @@ init _ =
             , courses = Array.empty
             , requestFilterStatus = Modified
             , schedProgress = 0
+            , showModal = False
             }
     in (model, Cmd.batch
         [ getScheds model
@@ -72,30 +85,15 @@ type alias Model =
     { calendar : CalendarData
     , subjects : List Subject
     , requestFilters : ScheduleRequest
-    , renderFilters : RenderFilter
+    , renderFilters : RenderFilter.RenderFilter
     , courseOffData : CourseOffData
-    , courseSelector: CourseSelector
+    , courseSelector: CourseSelector.CourseSelector
     , addCourse: Bool
     , courses: Array Course
     , requestFilterStatus: ScheduleStatus
     , schedProgress: Int
+    , showModal: Bool
     }
-
-type Msg
-    = RequestFilter RequestFilterMsg
-    | RenderFilter RenderFilterMsg
-    | CourseOff CourseOffMsg
-    | CourseSelector CourseSelectorMsg
-    | GetSubjects
-    | GetScheds
-    | NewSubjects (Result Http.Error (List Subject))
-    | NewScheds (Result Http.Error (CourseData))
-    | IncrementSched
-    | DecrementSched
-    | RenderCurrentSched (Cmd Msg)
-    | ShowCourseSelector
-    | SchedProgress SolverState
-    | ContinueScheds SolverState
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model = case msg of
@@ -128,13 +126,13 @@ update msg model = case msg of
                 |> update (CourseOff <| GetSubjectCourses subjectIdent)
             otherwise -> (newModel, Cmd.none)
 
-    GetSubjects -> model
+    Msg.GetSubjects -> model
         |> update (CourseOff CourseOff.GetSubjects)
 
-    NewSubjects (Ok newSubjects) ->
+    Msg.NewSubjects (Ok newSubjects) ->
         ({ model | subjects = newSubjects}, Cmd.none)
 
-    NewSubjects (Err e) ->
+    Msg.NewSubjects (Err e) ->
         let _ = log "ERROR (NewSubjects)" <| Debug.toString e
         in (model, Cmd.none)
 
@@ -161,6 +159,7 @@ update msg model = case msg of
                 in ({ newModel1
                     | calendar = CalendarData 0
                     , requestFilterStatus = Received
+                    , showModal = currentScheds.courseData.schedCount <= 0
                     }
                 , Cmd.batch [cmd, renderCurrentSched newModel])
             else (newModel, Process.sleep 0
@@ -192,6 +191,9 @@ update msg model = case msg of
 
     ShowCourseSelector ->
         ({model | addCourse = not model.addCourse}, Cmd.none)
+
+    ToggleModal ->
+        ({ model | showModal = not model.showModal }, Cmd.none)
 
 -- getSubjects : Cmd Msg
 -- getSubjects = Http.get
@@ -236,6 +238,13 @@ view model =
                 ]
             , div [class "column"]
                 <| courseSelector model
+            ]
+        , modal model.showModal ToggleModal
+            [ div [ class "box"]
+                [ p [ class "title is-4" ] [ text <| "That Didn't Work" ]
+                , Html.hr [] []
+                , p [] [ text <| "We couldn't make any schedules that work with these settings. Try adding some courses or changing the filters below." ]
+                ]
             ]
         ]
 
