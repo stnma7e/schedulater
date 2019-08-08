@@ -1,11 +1,13 @@
 port module Main exposing (main)
 
 import Debug exposing (log)
-import Html exposing (Html, button, div, text, input, table, tr, td, thead, tbody, label, span)
-import Html.Attributes exposing (placeholder, class, id, type_, value, disabled, title)
+import Html exposing (Html, button, div, text, input, table, tr, td, thead, tbody, label, span, progress)
+import Html.Attributes as HA exposing (placeholder, class, id, type_, value, disabled, title, value)
 import Html.Events exposing (onClick, onInput)
 import Browser
+import Process
 import Http
+import Task
 import Json.Decode exposing (string, list)
 import Array exposing (Array)
 import Dict exposing (Dict)
@@ -150,7 +152,7 @@ update msg model = case msg of
     SchedProgress currentScheds ->
         let newModel =
                 { model
-                | schedProgress = Debug.log "progress" currentScheds.progress
+                | schedProgress = currentScheds.progress
                 }
         in if currentScheds.progress == 100
             then let (newModel1, cmd) = newModel
@@ -161,7 +163,8 @@ update msg model = case msg of
                     , requestFilterStatus = Received
                     }
                 , Cmd.batch [cmd, renderCurrentSched newModel])
-            else newModel |> update (ContinueScheds currentScheds)
+            else (newModel, Process.sleep 0
+                    |> Task.perform (always <| ContinueScheds currentScheds))
 
     NewScheds (Ok newScheds) ->
         let (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds))
@@ -273,18 +276,26 @@ nextPrevSchedButtons model =
         ]
 
 goButton model =
-    button
-        [ class <| "button is-success is-outlined" ++ " " ++
-            case model.requestFilterStatus of
-                Pending -> "is-loading"
-                otherwise -> ""
-        , id "goButton"
-        , onClick GetScheds
-        , disabled <| case model.requestFilterStatus of
-            Received -> True
-            otherwise -> False
+    div []
+        [ button
+            [ class <| "button is-success is-outlined" ++ " " ++
+                case model.requestFilterStatus of
+                    Pending -> "is-loading"
+                    otherwise -> ""
+            , id "goButton"
+            , onClick GetScheds
+            , disabled <| case model.requestFilterStatus of
+                Received -> True
+                otherwise -> False
+            ]
+            [text "Go"]
+        , progress
+            [ class "progress is-success"
+            , value <| String.fromInt model.schedProgress
+            , HA.max "100"
+            ]
+            []
         ]
-        [text "Go"]
 
 filters model =
     div []

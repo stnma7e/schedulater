@@ -70,7 +70,7 @@ solveCourses state =
                                 }
                             else courseData
                         }
-                in if modBy 100 (currentCombo combos) == 0
+                in if modBy 500 (currentCombo combos) == 0
                     then
                         { newState
                         | progress = (currentCombo combos) * 100 // (maxCombo combos.max)
