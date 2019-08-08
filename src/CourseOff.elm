@@ -1,7 +1,7 @@
 module CourseOff exposing (..)
 
 import Http
-import Json.Decode exposing (int, string, list, field, map2, map5, map4)
+import Json.Decode as D exposing (int, string, list, field, map2, map5, map4, nullable, map)
 import Array
 import Dict exposing (Dict)
 import Debug exposing (log)
@@ -52,7 +52,7 @@ update msg data = case msg of
         in ({ data | courses = newCourseInfo }, Cmd.none)
     NewCourseInfo sub courseNum (Err err) ->
         let x = Debug.log "" err
-        in (data, Cmd.none) 
+        in (data, Cmd.none)
 
 getCourseOffSubjects : Cmd CourseOffMsg
 getCourseOffSubjects = Http.get
@@ -163,10 +163,14 @@ decodeCourseOffCourseInfo = map5 CourseOffSection
     (field "credits" int)
     (field "ident" string)
     (field "timeslots" (list decodeTimeslot))
-    (field "instructor"
-        <| map2 Instructor
-            (field "lname" string)
-            (field "fname" string))
+    ((nullable <| field "instructor" decodeInstructor)
+        |> D.map (\i -> Maybe.withDefault {fname="", lname="TBA"} i))
+
+decodeInstructor = map2 Instructor
+    ((nullable <| field "lname" string)
+        |> D.map (\i -> Maybe.withDefault "TBA" i))
+    ((nullable <| field "fname" string)
+        |> D.map (\i -> Maybe.withDefault "" i))
 
 decodeTimeslot = map4 Timeslot
     (field "location" string)
