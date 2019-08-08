@@ -134,9 +134,9 @@ update msg model = case msg of
 
     GetScheds ->
         let newModel = { model | requestFilterStatus = Pending }
-            newScheds = solveCourses model.requestFilters
-                    <| Array.fromList
-                    <| Dict.values model.courseOffData.courses
+            newScheds = Dict.values model.courseOffData.courses
+                    |> Array.fromList
+                    |> solveCourses model.requestFilters
             (newModel1, cmd) = newModel
                 |> update (RenderFilter <| NewCourses newScheds)
 

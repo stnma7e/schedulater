@@ -20,15 +20,20 @@ type alias StartEndTime =
     }
 type alias Days = Int
 
+sequence2 : List a -> List a -> List (a, a)
+sequence2 a b = List.map (\a1 -> List.map (\b1 -> (a1, b1)) b) a
+    |> List.foldl (++) []
+
 checkClassTimesCollide : ClassTimes -> ClassTimes -> Bool
-checkClassTimesCollide ct1 ct2 = List.foldl (||) False
-    <| List.map2 (\ct11 ct22 -> checkClassTimeConflict ct11 ct22) ct1 ct2
+checkClassTimesCollide ct1 ct2 = sequence2 ct1 ct2
+    |> List.map (\(ct11, ct22) -> checkClassTimeConflict ct11 ct22)
+    |> List.foldl (||) False
 
 -- returns true if conflict
 checkClassTimeConflict : ClassTime -> ClassTime -> Bool
 checkClassTimeConflict ct1 ct2 = if ((Bitwise.and ct1.days ct2.days) == 0)
     then False
-    else not <| (ct1.startEndTime.end <= ct2.startEndTime.start)
+    else not <| (ct1.startEndTime.end <= ct2.startEndTime.start) -- need to check each day individually
         || (ct1.startEndTime.start >= ct2.startEndTime.end)
 
 timeRangeValid : StartEndTime -> ClassTimes -> Bool

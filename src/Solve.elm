@@ -43,15 +43,16 @@ runComboAndSolve sr courses combos valid =
 filterCombo : ScheduleRequest -> Array Course -> Combo -> Bool
 filterCombo sr courses combo =
     let sections = getComboSections courses combo
-        validTimes = checkTimes (withDefault []
-            <| sequence <| List.filter isJust sections) combo sr.timeFilter
-        noTimeCollision = withDefault True <|
-                (sections |> checkTimesCollide |> Maybe.map not)
+                |> List.filter isJust
+                |> sequence
+                |> withDefault []
+        validTimes = checkTimes combo sr.timeFilter sections
+        noTimeCollision = not <| checkTimesCollide sections
         validCredits = checkCreditHours courses combo sr.creditFilter
     in validCredits && validTimes && noTimeCollision
 
-checkTimes : List Section -> Combo -> TimeFilter -> Bool
-checkTimes sections combo tf = sections
+checkTimes : Combo -> TimeFilter -> List Section -> Bool
+checkTimes combo tf sections = sections
     |> List.map (\s -> timeRangeValid tf s.daytimes)
     |> List.foldl (&&) True
 
@@ -69,22 +70,18 @@ checkCreditHours courses combo cf =
     in sum >= cf.min && sum <= cf.max
 
 -- returns true if times collide
-checkTimesCollide : List (Maybe Section) -> Maybe Bool
+checkTimesCollide : List Section -> Bool
 checkTimesCollide sections = case sections of
-    [] -> Just False
+    [] -> False
     (section :: sx) ->
-        let classTimes = section |> andThen (\s -> Just s.daytimes)
-            allClassTimes = withDefault [] <| sequence
-                <| List.map (andThen (\s -> Just s.daytimes))
-                <| List.filter isJust sx
-        in Maybe.map ((||) <| checkTimeConflicts classTimes allClassTimes)
-            (checkTimesCollide sx)
+        let allClassTimes = List.map (\s -> s.daytimes) sx
+        in checkTimeConflicts section.daytimes allClassTimes
+            || checkTimesCollide sx
 
-checkTimeConflicts : Maybe ClassTimes -> List ClassTimes -> Bool
-checkTimeConflicts ct cts = withDefault False <| (ct |> andThen (\ct1 ->
-    Just <| List.foldl (||) (False)
-        <| List.map (\ct2 -> checkClassTimesCollide ct1 ct2)
-        cts))
+checkTimeConflicts : ClassTimes -> List ClassTimes -> Bool
+checkTimeConflicts ct1 cts = cts
+    |> List.map (\ct2 -> checkClassTimesCollide ct1 ct2)
+    |> List.foldl (||) (False)
 
 getComboSections : Array Course -> Combo -> List (Maybe Section)
 getComboSections courses combo =
@@ -95,5 +92,5 @@ getComboSections courses combo =
 
 getIthSectionOfCourse : Maybe Course -> ClassIndex -> Maybe Section
 getIthSectionOfCourse c i = c
-    |> andThen (\x -> Array.get (i - 1) x.classes)
+    |> andThen (\x -> Array.get (i - 1) x.classes) -- if i == -1, then we return Nothing
     |> andThen (Array.get 0)
