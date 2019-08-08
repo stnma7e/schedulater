@@ -50,7 +50,16 @@ getAtPosition i c = Array.get i c.current |> andThen
 
 
 currentCombo : Combos -> Int
-currentCombo c = 1
+currentCombo c =
+    let magnitudes = Array.indexedMap
+                (\i x -> maxCombo <| Array.slice 0 i c.max)
+                c.max
+    in Array.foldl (\(c1, c2) acc -> acc + c1 * c2) 0
+        <| zip c.current magnitudes
 
-maxCombo : Combos -> Int
-maxCombo c = 1
+maxCombo : Combo -> Int
+maxCombo c = Array.foldl (\c1 acc -> acc * (c1 + 1)) 1 c
+
+zip : Array a -> Array a -> Array (a, a)
+zip a b = List.map2 (\a1 b1 -> (a1, b1)) (Array.toList a) (Array.toList b)
+    |> Array.fromList

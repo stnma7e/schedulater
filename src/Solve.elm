@@ -59,18 +59,23 @@ solveCourses state =
                     | schedCount = (Array.length valid)
                     }
                 }
-            Just nextCombos -> if False --modBy 999 (currentCombo combos) == 2
-                then { state | progress = (currentCombo combos) * 100 // (maxCombo combos)}
-                else if filterCombo sr courses nextCombos.current
-                    then solveCourses
+            Just nextCombos ->
+                let newState =
                         { state
                         | combos = nextCombos
-                        , courseData =
-                            { courseData
-                            | combos = Array.push nextCombos.current valid
-                            }
+                        , courseData = if filterCombo sr courses nextCombos.current
+                            then
+                                { courseData
+                                | combos = Array.push nextCombos.current valid
+                                }
+                            else courseData
                         }
-                    else solveCourses { state | combos = nextCombos }
+                in if modBy 100 (currentCombo combos) == 0
+                    then
+                        { newState
+                        | progress = (currentCombo combos) * 100 // (maxCombo combos.max)
+                        }
+                    else solveCourses newState
 
 filterCombo : ScheduleRequest -> Array Course -> Combo -> Bool
 filterCombo sr courses combo =

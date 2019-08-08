@@ -150,7 +150,7 @@ update msg model = case msg of
     SchedProgress currentScheds ->
         let newModel =
                 { model
-                | schedProgress = currentScheds.progress
+                | schedProgress = Debug.log "progress" currentScheds.progress
                 }
         in if currentScheds.progress == 100
             then let (newModel1, cmd) = newModel
