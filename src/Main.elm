@@ -50,6 +50,7 @@ init _ =
             , addCourse = False
             , courses = Array.empty
             , requestFilterStatus = Modified
+            , schedProgress = 0
             }
     in (model, Cmd.batch
         [ getScheds model
@@ -75,6 +76,7 @@ type alias Model =
     , addCourse: Bool
     , courses: Array Course
     , requestFilterStatus: ScheduleStatus
+    , schedProgress: Int
     }
 
 type Msg
@@ -90,6 +92,8 @@ type Msg
     | DecrementSched
     | RenderCurrentSched (Cmd Msg)
     | ShowCourseSelector
+    | SchedProgress SolverState
+    | ContinueScheds SolverState
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model = case msg of
@@ -136,19 +140,31 @@ update msg model = case msg of
         let newModel = { model | requestFilterStatus = Pending }
             newScheds = Dict.values model.courseOffData.courses
                     |> Array.fromList
-                    |> solveCourses model.requestFilters
-            (newModel1, cmd) = newModel
-                |> update (RenderFilter <| NewCourses newScheds)
+                    |> Solve.init model.requestFilters
+        in model |> update (SchedProgress newScheds)
 
-        in ({ newModel1
-                | calendar = CalendarData 0
-                , requestFilterStatus = Received
+    ContinueScheds currentScheds ->
+        let newScheds = solveCourses currentScheds
+        in model |> update (SchedProgress newScheds)
+
+    SchedProgress currentScheds ->
+        let newModel =
+                { model
+                | schedProgress = currentScheds.progress
                 }
-            , Cmd.batch [cmd, renderCurrentSched newModel])
+        in if currentScheds.progress == 100
+            then let (newModel1, cmd) = newModel
+                        |> update (RenderFilter
+                            <| NewCourses currentScheds.courseData)
+                in ({ newModel1
+                    | calendar = CalendarData 0
+                    , requestFilterStatus = Received
+                    }
+                , Cmd.batch [cmd, renderCurrentSched newModel])
+            else newModel |> update (ContinueScheds currentScheds)
 
     NewScheds (Ok newScheds) ->
-        let newScheds1 = solveCourses model.requestFilters newScheds.courses
-            (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds1))
+        let (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds))
         in ({ newModel
                 | calendar = CalendarData 0
                 , requestFilterStatus = Received

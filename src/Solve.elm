@@ -23,22 +23,54 @@ isJust x = case x of
     Nothing -> False
     Just _ -> True
 
-solveCourses : ScheduleRequest -> Array Course -> CourseData
-solveCourses sr courses =
+type alias SolverState =
+    { combos: Combos
+    , scheduleRequest: ScheduleRequest
+    , courseData: CourseData
+    , progress: Int
+    }
+
+init : ScheduleRequest -> Array Course -> SolverState
+init sr courses =
     let filteredCourses = Array.filter (\c -> List.member c sr.courses) courses
         currentCombo = Array.repeat (Array.length filteredCourses) 0
         initialCombo = Array.repeat (Array.length filteredCourses) 0
         maxCombo = log "max" <| Array.map (\c -> c.classes |> Array.length) filteredCourses
         combos = Combos initialCombo maxCombo
-    in runComboAndSolve sr filteredCourses combos []
+    in { combos = combos
+        , scheduleRequest = sr
+        , courseData = CourseData 0 courses (Array.fromList [])
+        , progress = 0
+        }
 
-runComboAndSolve : ScheduleRequest -> Array Course -> Combos -> List (Combo) -> CourseData
-runComboAndSolve sr courses combos valid =
-    case incrementCombo combos of
-        Nothing -> CourseData (List.length valid) courses (Array.fromList valid)
-        Just nextCombos -> if filterCombo sr courses nextCombos.current
-            then runComboAndSolve sr courses nextCombos (nextCombos.current :: valid)
-            else runComboAndSolve sr courses nextCombos valid
+solveCourses : SolverState -> SolverState
+solveCourses state =
+    let sr = state.scheduleRequest
+        combos = state.combos
+        courseData = state.courseData
+        courses = courseData.courses
+        valid = courseData.combos
+        in case incrementCombo combos of
+            Nothing ->
+                { state
+                | progress = 100
+                , courseData =
+                    { courseData
+                    | schedCount = (Array.length valid)
+                    }
+                }
+            Just nextCombos -> if False --modBy 999 (currentCombo combos) == 2
+                then { state | progress = (currentCombo combos) * 100 // (maxCombo combos)}
+                else if filterCombo sr courses nextCombos.current
+                    then solveCourses
+                        { state
+                        | combos = nextCombos
+                        , courseData =
+                            { courseData
+                            | combos = Array.push nextCombos.current valid
+                            }
+                        }
+                    else solveCourses { state | combos = nextCombos }
 
 filterCombo : ScheduleRequest -> Array Course -> Combo -> Bool
 filterCombo sr courses combo =

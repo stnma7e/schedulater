@@ -47,3 +47,10 @@ getAtPosition : Int -> Combos -> Maybe (Int, Int)
 getAtPosition i c = Array.get i c.current |> andThen
     (\j_current ->  Array.get i c.max |> andThen
         (\j_max -> Just (j_current, j_max)))
+
+
+currentCombo : Combos -> Int
+currentCombo c = 1
+
+maxCombo : Combos -> Int
+maxCombo c = 1
