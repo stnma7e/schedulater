@@ -7,6 +7,7 @@ import Json.Decode as D exposing (field, index, int, string, array, map2, map3, 
 import Maybe exposing (withDefault, andThen)
 
 import ClassTimes exposing (ClassTimes, getClassTimes)
+import Combos exposing(Combo)
 
 type alias CourseIndex = Int
 type alias ClassIndex = Int
@@ -64,6 +65,12 @@ extractCourses : Subject -> CourseData -> Array Course
 extractCourses sub cd = cd.courses
     |> Array.filter (\c -> c.subject == String.toUpper sub)
 
+applyCombo : Array Course -> Combo -> Array (Maybe Class)
+applyCombo courses combo = combo
+    |> Array.indexedMap (\courseIdx classIdx ->
+        Array.get courseIdx courses
+            |> andThen (\course -> Array.get classIdx course.classes))
+
 findCourseIndex : Course -> CourseData -> Maybe CourseIndex
 findCourseIndex course cd = cd.courses
     |> Array.indexedMap (\courseIdx other ->
@@ -73,7 +80,6 @@ findCourseIndex course cd = cd.courses
         )
     |> Array.filter isJust
     |> Array.foldl (\courseInfo acc -> courseInfo) Nothing
-
 
 findSection : Int -> CourseData -> Maybe (CourseIndex, ClassIndex)
 findSection crn cd = cd.courses

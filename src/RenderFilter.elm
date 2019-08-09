@@ -6,8 +6,22 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 
 import Course exposing (..)
+import ClassTimes exposing(StartEndTime, timeRangeValid)
+import Combos exposing (Combo)
+
+sequence : List (Maybe a) -> Maybe (List a)
+sequence mss = case mss of
+    [] -> Just []
+    (m::ms) -> m |> Maybe.andThen
+        (\x -> sequence ms |> Maybe.andThen
+            (\xs -> Just (x::xs)))
 
 flip f a b = f b a
+
+type alias CreditFilter =
+    { min: Int
+    , max: Int
+    }
 
 type alias RenderFilter =
     { courseList: CourseData
@@ -16,6 +30,8 @@ type alias RenderFilter =
     , lockedClasses: Dict CourseIndex ClassIndex
     , mustUseCourses: List CourseIndex
     , previewCourse: Maybe CourseIndex
+    , creditFilter: CreditFilter
+    , timeFilter: StartEndTime
     }
 
 defaultRenderFilters =
@@ -25,6 +41,14 @@ defaultRenderFilters =
     , lockedClasses = Dict.empty
     , mustUseCourses = []
     , previewCourse = Nothing
+    , creditFilter =
+        { min = 12
+        , max = 15
+        }
+    , timeFilter =
+        { start = 8 * 60
+        , end = 19 * 60
+        }
     }
 
 type RenderFilterMsg
@@ -32,6 +56,10 @@ type RenderFilterMsg
     | NewCourses CourseData
     | PreviewCourse Course
     | MustUseCourse Course
+    | NewMaxHours Int
+    | NewMinHours Int
+    | NewStartTime String
+    | NewEndTime String
 
 -- dispatch receives events and decides whether the filter must be updated
 --      if no change can be made (an error occured, etc)
@@ -64,13 +92,13 @@ update msg rf = case msg of
         in { rf | previewCourse = newPreview }
             |> updateCourses
 
-    MustUseCourse course ->
-        case findCourseIndex course rf.courseList of
+    MustUseCourse course -> case findCourseIndex course rf.courseList of
             Nothing -> log "course not found for mustUse" rf
             Just courseIdx ->
-                let newMustUseCourses = if List.member courseIdx rf.mustUseCourses
-                        then List.filter ((/=) courseIdx) rf.mustUseCourses
-                        else courseIdx :: rf.mustUseCourses
+                let newMustUseCourses =
+                        if List.member courseIdx rf.mustUseCourses
+                            then List.filter ((/=) courseIdx) rf.mustUseCourses
+                            else courseIdx :: rf.mustUseCourses
                 in { rf | mustUseCourses = newMustUseCourses }
                     |> updateCourses
 
@@ -89,22 +117,64 @@ update msg rf = case msg of
             in { rf | lockedClasses = newLocked }
                 |> updateCourses
 
+    NewMaxHours newMaxHours ->
+        let newHours = max 1 <| min 18 newMaxHours
+            newMinHours = min rf.creditFilter.min newHours
+            newCreditFilter = rf.creditFilter
+        in { rf | creditFilter =
+                { newCreditFilter
+                    | max = newHours
+                    , min = newMinHours
+                }
+           } |> updateCourses
+
+    NewMinHours newMinHours ->
+        let newHours = max 1 <| min 18 newMinHours
+            newMaxHours = max rf.creditFilter.max newHours
+            newCreditFilter = rf.creditFilter
+        in { rf | creditFilter =
+                { newCreditFilter
+                    | min = newHours
+                    , max = newMaxHours
+                }
+           } |> updateCourses
+
+    NewStartTime time ->
+        let oldTimeFilter = rf.timeFilter
+            newTimeFilter = case timeFromString time of
+                Just t -> { oldTimeFilter | start = t }
+                Nothing -> log "start time not parsed" oldTimeFilter
+        in { rf | timeFilter = newTimeFilter }
+            |> updateCourses
+
+    NewEndTime time ->
+        let oldTimeFilter = rf.timeFilter
+            newTimeFilter = case timeFromString time of
+                Just t -> { oldTimeFilter | end = t }
+                Nothing -> log "end time not parsed" oldTimeFilter
+        in { rf | timeFilter = newTimeFilter }
+            |> updateCourses
+
 updateCourses : RenderFilter -> RenderFilter
 updateCourses rf =
-    let newCombos = case rf.previewCourse of
+    let courseList = rf.courseList
+        newCombos = case rf.previewCourse of
             Just previewIdx ->
-                let numSections = Array.get previewIdx rf.courseList.courses
+                let numSections = Array.get previewIdx courseList.courses
                         |> Maybe.andThen (\course -> Just <| Array.length course.classes)
                         |> Maybe.withDefault 0
-                    comboLength = Array.length rf.courseList.courses
+                    comboLength = Array.length courseList.courses
                 in List.range 1 numSections
                     |> List.map (\courseIdx -> Array.initialize comboLength (\i ->
                             if i == previewIdx then courseIdx else 0))
                     |> Array.fromList
             Nothing -> -- there is no course being previewed now
-                let newCombos1 = rf.lockedClasses
+                let filteredCombos = rf.originalCombos
+                        |> Array.filter (filterTimes courseList.courses rf.timeFilter)
+                        |> Array.filter (filterCreditHours courseList.courses rf.creditFilter)
+                    newCombos1 = rf.lockedClasses
                         |> Dict.toList
-                        |> flip List.foldl rf.originalCombos (\(courseIdx, sectionIdx) combos ->
+                        |> flip List.foldl filteredCombos (\(courseIdx, sectionIdx) combos ->
                             combos |> Array.filter (\combo -> case Array.get courseIdx combo of
                                 -- index 0 is reserved for an unused course section
                                 -- so while lockedCourses uses the idicies of the array
@@ -120,8 +190,52 @@ updateCourses rf =
                             Nothing -> False
                     ))
     in { rf | courseList =
-            { schedCount = Array.length newCombos
-            , courses = rf.courseList.courses
+            { courseList
+            | schedCount = Array.length newCombos
             , combos = newCombos
             }
         }
+
+filterTimes : Array Course -> StartEndTime -> Combo -> Bool
+filterTimes courses timeFilter combo =
+    let maybeClasses = sequence <| Array.toList <| applyCombo courses combo
+    in case maybeClasses of
+        Nothing -> False
+        Just classes -> classes
+            |> List.map (\class -> case Array.get 0 class of
+                Just section1 -> timeRangeValid timeFilter section1.daytimes
+                Nothing -> False)
+            |> List.foldl (&&) True
+
+filterCreditHours : Array Course -> CreditFilter -> Combo -> Bool
+filterCreditHours courses cf combo =
+    let l_courses = Array.toList courses
+        l_combo = Array.toList combo
+        courseCredits = List.map2 (\course comboIndex ->
+            if comboIndex > 0 then
+                case String.toInt course.credits of
+                    Just credit -> credit
+                    Nothing -> 1000
+            else 0) l_courses l_combo
+        sum = List.foldl (+) 0 courseCredits
+    in sum >= cf.min && sum <= cf.max
+
+showTime : Int -> String
+showTime t =
+    let mins = remainderBy 60 t
+        minsStr = if mins < 10
+            then "0" ++ String.fromInt mins
+            else String.fromInt mins
+    in String.fromInt (t // 60) ++ ":" ++ minsStr
+
+timeFromString : String -> Maybe Int
+timeFromString time =
+    let timeList = String.split ":" time
+        maybeHours = List.head timeList
+        maybeMins = timeList |> List.tail |> Maybe.andThen List.head
+        maybeTime = Maybe.map2 (\hours mins ->
+            Maybe.map2 (\h m ->
+                60*h + m)
+            (String.toInt hours) (String.toInt mins))
+            maybeHours maybeMins
+    in maybeTime |> Maybe.andThen identity

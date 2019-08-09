@@ -6,22 +6,23 @@ import Html.Events exposing (onClick, onInput)
 import Dict exposing (..)
 
 import Course exposing (..)
-import RequestFilter exposing (..)
 
 type CourseSelectorMsg
     = SubjectSearchString String
     | DeselectSubject
     | SelectSubject SubjectIdent
-    | CourseAdded Course
+    | AddCourse Course
 
 type alias CourseSelector =
     { subjectSearchString: String
     , selectedSubject: SubjectIdent
+    , courses: List Course
     }
 
 defaultCourseSelector =
     { subjectSearchString = ""
     , selectedSubject = emptyIdent
+    , courses = []
     }
 
 update : CourseSelectorMsg -> CourseSelector -> CourseSelector
@@ -35,7 +36,11 @@ update msg cs = case msg of
     DeselectSubject ->
         { cs | selectedSubject = emptyIdent, subjectSearchString = "" }
 
-    otherwise -> cs
+    AddCourse course ->
+            let newCourses = if List.member course cs.courses
+                    then List.filter ((/=) course) cs.courses
+                    else course :: cs.courses
+            in { cs | courses = newCourses }
 
 view : CourseSelector -> List SubjectIdent -> CourseDict -> Html CourseSelectorMsg
 view cs subjects courses =
@@ -95,7 +100,7 @@ showSelectedSubjectCourses courseSearchString selectedSubjectCourses =
                         |> String.contains (String.toLower courseSearchString))
                     |> List.map (\course1 ->
                         tr  [ class "courseRow"
-                            , onClick (CourseAdded course1)
+                            , onClick (AddCourse course1)
                             ]
 
                             [ td [] [text course1.title]

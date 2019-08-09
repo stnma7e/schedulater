@@ -3,15 +3,13 @@ module Msg exposing (..)
 import Http
 
 import Course exposing (..)
-import RequestFilter exposing (..)
 import RenderFilter exposing (..)
 import Solve exposing (..)
 import CourseOff exposing (..)
 import CourseSelector exposing (..)
 
 type Msg
-    = RequestFilter RequestFilterMsg
-    | RenderFilter RenderFilterMsg
+    = RenderFilter RenderFilterMsg
     | CourseOff CourseOffMsg
     | CourseSelector CourseSelectorMsg
     | GetSubjects

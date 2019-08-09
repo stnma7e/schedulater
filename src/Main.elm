@@ -16,14 +16,7 @@ import Msg exposing (Msg(..))
 import Course exposing (Course, Subject, Section, makeSched, decodeCourseData)
 import Solve exposing (SolverState, solveCourses)
 import CourseSelector exposing (CourseSelectorMsg(..), defaultCourseSelector)
-import RequestFilter exposing
-    ( ScheduleRequest
-    , RequestFilterMsg(..)
-    , defaultBody
-    , showTime
-    , encodeScheduleRequest
-    )
-import RenderFilter exposing (RenderFilterMsg(..), defaultRenderFilters)
+import RenderFilter exposing (RenderFilterMsg(..), defaultRenderFilters, showTime)
 import CourseOff exposing
     ( CourseOffData
     , CourseOffMsg(..)
@@ -48,8 +41,8 @@ port endTime : (String -> a) -> Sub a
 
 subscriptions model = Sub.batch
     [ lockSection (\crn -> RenderFilter <| LockSection crn)
-    , startTime (\time -> RequestFilter <| NewStartTime time)
-    , endTime (\time -> RequestFilter <| NewEndTime time)
+    , startTime (\time -> RenderFilter <| NewStartTime time)
+    , endTime (\time -> RenderFilter <| NewEndTime time)
     ]
 
 init : () -> (Model, Cmd Msg)
@@ -57,19 +50,17 @@ init _ =
     let model =
             { calendar = CalendarData 0
             , subjects = []
-            , requestFilters = defaultBody
             , renderFilters = defaultRenderFilters
             , courseOffData = defaultCourseOffData
             , courseSelector = defaultCourseSelector
             , addCourse = False
             , courses = Array.empty
-            , requestFilterStatus = Modified
+            , courseChangeState = Modified
             , schedProgress = 0
             , showModal = False
             }
     in (model, Cmd.batch
-        [ getScheds model
-        , Cmd.map CourseOff getCourseOffSubjects
+        [ Cmd.map CourseOff getCourseOffSubjects
         ])
 
 type alias CalendarData =
@@ -84,26 +75,18 @@ type ScheduleStatus
 type alias Model =
     { calendar : CalendarData
     , subjects : List Subject
-    , requestFilters : ScheduleRequest
     , renderFilters : RenderFilter.RenderFilter
     , courseOffData : CourseOffData
     , courseSelector: CourseSelector.CourseSelector
     , addCourse: Bool
     , courses: Array Course
-    , requestFilterStatus: ScheduleStatus
+    , courseChangeState: ScheduleStatus
     , schedProgress: Int
     , showModal: Bool
     }
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model = case msg of
-    RequestFilter msg1 ->
-        let requestFilters = RequestFilter.update msg1 model.requestFilters
-        in ({model
-            | requestFilters = requestFilters
-            , requestFilterStatus = Modified
-            }, Cmd.none)
-
     RenderFilter msg1 ->
         let renderFilters = RenderFilter.dispatch msg1 model.renderFilters
         in { model
@@ -120,8 +103,8 @@ update msg model = case msg of
         let courseSelector1 = CourseSelector.update msg1 model.courseSelector
             newModel = {model | courseSelector = courseSelector1}
         in case msg1 of
-            CourseAdded course -> newModel
-                |> update (RequestFilter <| AddCourse course)
+            AddCourse _ ->
+                ({ newModel | courseChangeState = Modified }, Cmd.none)
             SelectSubject subjectIdent -> newModel
                 |> update (CourseOff <| GetSubjectCourses subjectIdent)
             otherwise -> (newModel, Cmd.none)
@@ -137,10 +120,10 @@ update msg model = case msg of
         in (model, Cmd.none)
 
     GetScheds ->
-        let newModel = { model | requestFilterStatus = Pending }
-            newScheds = Dict.values model.courseOffData.courses
+        let newModel = { model | courseChangeState = Pending }
+            newScheds = model.courseSelector.courses
                     |> Array.fromList
-                    |> Solve.init model.requestFilters
+                    |> Solve.init
         in model |> update (SchedProgress newScheds)
 
     ContinueScheds currentScheds ->
@@ -158,7 +141,7 @@ update msg model = case msg of
                             <| NewCourses currentScheds.courseData)
                 in ({ newModel1
                     | calendar = CalendarData 0
-                    , requestFilterStatus = Received
+                    , courseChangeState = Received
                     , showModal = currentScheds.courseData.schedCount <= 0
                     }
                 , Cmd.batch [cmd, renderCurrentSched newModel])
@@ -169,7 +152,7 @@ update msg model = case msg of
         let (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds))
         in ({ newModel
                 | calendar = CalendarData 0
-                , requestFilterStatus = Received
+                , courseChangeState = Received
                 }
             , Cmd.batch [cmd, renderCurrentSched newModel])
 
@@ -194,26 +177,6 @@ update msg model = case msg of
 
     ToggleModal ->
         ({ model | showModal = not model.showModal }, Cmd.none)
-
--- getSubjects : Cmd Msg
--- getSubjects = Http.get
---     { url = "/subjects"
---     , expect = Http.expectJson NewSubjects (list string)
---     }
---
--- getCourses : Subject -> Cmd Msg
--- getCourses sub = Http.get
---     { url = "/courses/" ++ sub
---     , expect = Http.expectJson (\x -> RenderFilter <| NewSubjectCourseList x) (list decodeCourseTableData)
---     }
---
-getScheds : Model -> Cmd Msg
-getScheds model = Http.post
-    { url = "/courses"
-    , body = Http.stringBody "application/json"
-        <| encodeScheduleRequest model.requestFilters
-    , expect = Http.expectJson NewScheds decodeCourseData
-    }
 
 renderCurrentSched : Model -> Cmd Msg
 renderCurrentSched model = sched <| makeSched
@@ -250,7 +213,7 @@ view model =
 
 debugInfo model =
     div [] <| List.map text
-        [-- [ Debug.toString <| model.renderFilters
+        [-- Debug.toString <| model.renderFilters
          -- Debug.toString <| model.requestFilters
         -- , Debug.toString <| model.courseSelector
         -- , Debug.toString <| Dict.size model.courseOffData.courses
@@ -288,12 +251,12 @@ goButton model =
     div []
         [ button
             [ class <| "button is-success is-outlined" ++ " " ++
-                case model.requestFilterStatus of
+                case model.courseChangeState of
                     Pending -> "is-loading"
                     otherwise -> ""
             , id "goButton"
             , onClick GetScheds
-            , disabled <| case model.requestFilterStatus of
+            , disabled <| case model.courseChangeState of
                 Received -> True
                 otherwise -> False
             ]
@@ -312,8 +275,8 @@ filters model =
         , showFilter "Time"
             "What time do you want to start and finish your schedule?"
             <| div [class "columns"]
-                [ showTimeFilter "Start: " "startTime" model.requestFilters.timeFilter.start
-                , showTimeFilter "End: " "endTime" model.requestFilters.timeFilter.end
+                [ showTimeFilter "Start: " "startTime" model.renderFilters.timeFilter.start
+                , showTimeFilter "End: " "endTime" model.renderFilters.timeFilter.end
                 ]
 
         , showFilter "Credits"
@@ -322,18 +285,18 @@ filters model =
                     [ div [class "column"]
                         [ span [class "title is-6"] [text "Min: "]
                         , input [type_ "number"
-                                , value <| String.fromInt model.requestFilters.creditFilter.min
-                                , onInput (\min -> RequestFilter <| NewMinHours
-                                    <| Maybe.withDefault model.requestFilters.creditFilter.min (String.toInt min))
+                                , value <| String.fromInt model.renderFilters.creditFilter.min
+                                , onInput (\min -> RenderFilter <| NewMinHours
+                                    <| Maybe.withDefault model.renderFilters.creditFilter.min (String.toInt min))
                                 ]
                                 []
                         ]
                     , div [class "column"]
                         [ span [class "title is-6"] [text "Max: "]
                         , input [type_ "number"
-                                , value <| String.fromInt model.requestFilters.creditFilter.max
-                                , onInput (\max -> RequestFilter <| NewMaxHours
-                                    <| Maybe.withDefault model.requestFilters.creditFilter.max (String.toInt max))
+                                , value <| String.fromInt model.renderFilters.creditFilter.max
+                                , onInput (\max -> RenderFilter <| NewMaxHours
+                                    <| Maybe.withDefault model.renderFilters.creditFilter.max (String.toInt max))
                                 ]
                                 []
                         ]
@@ -366,7 +329,7 @@ courseSelector model =
         [ div [class "tile is-ancestor"]
             [ div [class "tile is-parent is-vertical"]
                 <| selectedCoursesTiles
-                    model.requestFilters.courses
+                    model.courseSelector.courses
                     model.renderFilters
             ]
         ]
@@ -400,7 +363,7 @@ selectedCoursesTiles selectedCourses rf = selectedCourses
                 , title "Preview"
                 ] [ text "👁" ]
             , div
-                [ onClick (RequestFilter <| AddCourse course)
+                [ onClick (CourseSelector <| AddCourse course)
                 , class <|"button is-danger courseButton Xbutton is-outlined"
                 ]
                 [text "X"]
