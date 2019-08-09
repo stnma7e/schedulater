@@ -5,7 +5,7 @@ import Result
 import Maybe exposing (withDefault, andThen)
 import Debug exposing (log)
 
-import RequestFilter exposing (..)
+import RenderFilter exposing (..)
 import Course exposing (..)
 import Combos exposing (..)
 import ClassTimes exposing (..)
@@ -25,28 +25,23 @@ isJust x = case x of
 
 type alias SolverState =
     { combos: Combos
-    , scheduleRequest: ScheduleRequest
     , courseData: CourseData
     , progress: Int
     }
 
-init : ScheduleRequest -> Array Course -> SolverState
-init sr courses =
-    let filteredCourses = Array.filter (\c -> List.member c sr.courses) courses
-        currentCombo = Array.repeat (Array.length filteredCourses) 0
-        initialCombo = Array.repeat (Array.length filteredCourses) 0
-        maxCombo = log "max" <| Array.map (\c -> c.classes |> Array.length) filteredCourses
+init : Array Course -> SolverState
+init courses =
+    let initialCombo = Array.repeat (Array.length courses) 0
+        maxCombo = log "max" <| Array.map (\c -> Array.length c.classes) courses
         combos = Combos initialCombo maxCombo
     in { combos = combos
-        , scheduleRequest = sr
         , courseData = CourseData 0 courses (Array.fromList [])
         , progress = 0
         }
 
 solveCourses : SolverState -> SolverState
 solveCourses state =
-    let sr = state.scheduleRequest
-        combos = state.combos
+    let combos = state.combos
         courseData = state.courseData
         courses = courseData.courses
         valid = courseData.combos
@@ -63,7 +58,7 @@ solveCourses state =
                 let newState =
                         { state
                         | combos = nextCombos
-                        , courseData = if filterCombo sr courses nextCombos.current
+                        , courseData = if filterCombo courses nextCombos.current
                             then
                                 { courseData
                                 | combos = Array.push nextCombos.current valid
@@ -77,34 +72,14 @@ solveCourses state =
                         }
                     else solveCourses newState
 
-filterCombo : ScheduleRequest -> Array Course -> Combo -> Bool
-filterCombo sr courses combo =
+filterCombo : Array Course -> Combo -> Bool
+filterCombo courses combo =
     let sections = getComboSections courses combo
                 |> List.filter isJust
                 |> sequence
                 |> withDefault []
-        validTimes = checkTimes combo sr.timeFilter sections
         noTimeCollision = not <| checkTimesCollide sections
-        validCredits = checkCreditHours courses combo sr.creditFilter
-    in validCredits && validTimes && noTimeCollision
-
-checkTimes : Combo -> TimeFilter -> List Section -> Bool
-checkTimes combo tf sections = sections
-    |> List.map (\s -> timeRangeValid tf s.daytimes)
-    |> List.foldl (&&) True
-
-checkCreditHours : Array Course -> Combo -> CreditFilter -> Bool
-checkCreditHours courses combo cf =
-    let l_courses = Array.toList courses
-        l_combo = Array.toList combo
-        courseCredits = List.map2 (\course comboIndex ->
-            if comboIndex > 0 then
-                case String.toInt course.credits of
-                    Just credit -> credit
-                    Nothing -> 1000
-            else 0) l_courses l_combo
-        sum = List.foldl (+) 0 courseCredits
-    in sum >= cf.min && sum <= cf.max
+    in noTimeCollision
 
 -- returns true if times collide
 checkTimesCollide : List Section -> Bool
