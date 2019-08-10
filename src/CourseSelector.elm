@@ -96,15 +96,15 @@ showSelectedSubjectCourses courseSearchString selectedSubjectCourses =
                 ]
             , tbody []
                 (selectedSubjectCourses
-                    |> List.filter (\course1 -> String.toLower course1.title
+                    |> List.filter (\course1 -> String.toLower course1.ident.userFacing
                         |> String.contains (String.toLower courseSearchString))
                     |> List.map (\course1 ->
                         tr  [ class "courseRow"
                             , onClick (AddCourse course1)
                             ]
 
-                            [ td [] [text course1.title]
-                            , td [] [text course1.courseNum]
+                            [ td [] [text course1.ident.userFacing]
+                            , td [] [text course1.ident.internal]
                             , td [] [text course1.credits]
                             ]
                         )

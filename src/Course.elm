@@ -5,6 +5,7 @@ import Tuple exposing (pair)
 import Array exposing (Array)
 import Json.Decode as D exposing (field, index, int, string, array, map2, map3, map5)
 import Maybe exposing (withDefault, andThen)
+import Tuple exposing (first)
 
 import Common exposing (isJust)
 import ClassTimes exposing (ClassTimes, getClassTimes)
@@ -27,10 +28,9 @@ type alias Section =
 type alias Class = Array Section
 
 type alias Course =
-    { subject: Subject
-    , courseNum: String
+    { ident: CourseIdent
+    , subject: SubjectIdent
     , credits: String
-    , title: String
     , classes: Array Class
     }
 
@@ -41,13 +41,26 @@ type alias Ident =
     , userFacing: String
     }
 type alias IdentCmp = (String, String)
+type alias CourseIdentCmp = (IdentCmp, IdentCmp)
 
-type alias CourseDict = Dict (IdentCmp, IdentCmp) Course
+type alias CourseDict = Dict CourseIdentCmp Course
 
 emptyIdent = { internal = "", userFacing = "" }
 fakeIdent = Debug.todo ""
 ident2Cmp ident = (ident.internal, ident.userFacing)
 cmp2Ident (internal, userFacing) = { internal = internal, userFacing = userFacing }
+
+course2Cmp : Course -> CourseIdentCmp
+course2Cmp course = (ident2Cmp course.ident, ident2Cmp course.subject)
+
+cmp2Course : Array Course -> CourseIdentCmp -> Maybe (CourseIndex, Course)
+cmp2Course courses ident = courses
+    |> Array.indexedMap (\i x -> (i, x))
+    |> Array.filter (\(courseIdx, course) -> course2Cmp course == ident)
+    |> Array.get 0
+
+getCourseIdx : Array Course -> CourseIdentCmp -> Maybe CourseIndex
+getCourseIdx courses ident = Maybe.map first <| cmp2Course courses ident
 
 type alias CourseData =
     { schedCount: Int
@@ -61,9 +74,9 @@ type alias CourseTableData =
     , title: String
     }
 
-extractCourses : Subject -> CourseData -> Array Course
+extractCourses : SubjectIdent -> CourseData -> Array Course
 extractCourses sub cd = cd.courses
-    |> Array.filter (\c -> c.subject == String.toUpper sub)
+    |> Array.filter (\c -> String.toUpper c.subject.internal == String.toUpper sub.internal)
 
 applyCombo : Array Course -> Combo -> Array (Maybe Class)
 applyCombo courses combo = combo
@@ -107,7 +120,7 @@ makeSched courses comboIndex =
                     then Array.get courseIndex courses.courses
                     else Nothing
                 courseName  = case maybeCourse of
-                    Just c -> c.title
+                    Just c -> c.ident.userFacing
                     Nothing -> ""
                 maybeClass  = maybeCourse
                     |> andThen (\course -> Array.get (classIndex - 1) course.classes)

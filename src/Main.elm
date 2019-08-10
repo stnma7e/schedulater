@@ -11,10 +11,11 @@ import Task
 import Json.Decode exposing (string, list)
 import Array exposing (Array)
 import Dict exposing (Dict)
+import Tuple exposing (first)
 
 import Msg exposing (Msg(..))
 import Common exposing (flip)
-import Course exposing (Course, Subject, Section, makeSched)
+import Course exposing (Course, Subject, Section, makeSched, course2Cmp, getCourseIdx)
 import Solve exposing (SolverState, solveCourses)
 import CourseSelector exposing (CourseSelectorMsg(..), defaultCourseSelector)
 import RenderFilter exposing (RenderFilterMsg(..), defaultRenderFilters, showTime)
@@ -316,27 +317,25 @@ courseSelector model =
 
 selectedCoursesTiles selectedCourses rf = selectedCourses
     |> List.map (\course ->
-        let courseIdx = case Dict.get course.title rf.courseIndexMap of
-                Just c -> c
-                Nothing -> -1
+        let courseIdent = course2Cmp course
         in div [class "box tile is-child"]
-            [ text course.title
+            [ text course.ident.userFacing
             , Html.br [] []
             , div
-                [ onClick (RenderFilter <| MustUseCourse course)
+                [ onClick (RenderFilter <| MustUseCourse courseIdent)
                 , class <|"button is-primary courseButton" ++ " " ++
-                    if List.member courseIdx rf.mustUseCourses
+                    if List.member courseIdent rf.mustUseCourses
                         then ""
                         else "is-outlined"
                 ]
                 [text "Must use"]
             , div
-                [ onClick (RenderFilter <| PreviewCourse course)
+                [ onClick (RenderFilter <| PreviewCourse courseIdent)
                 , class <|"button courseButton is-outlined" ++ " " ++
                     case rf.previewCourse of
                         Nothing -> "is-white"
-                        Just courseIdx2 ->
-                            if courseIdx == courseIdx2
+                        Just courseIdent2 ->
+                            if courseIdent == courseIdent2
                                 then "is-primary"
                                 else "is-white"
                 , title "Preview"
@@ -346,34 +345,40 @@ selectedCoursesTiles selectedCourses rf = selectedCourses
                 , class <|"button is-danger courseButton Xbutton is-outlined"
                 ]
                 [text "X"]
-            , selectedCrns rf courseIdx
+            , selectedCrns rf courseIdent
             ])
 
-selectedCrns rf courseIdx =
+selectedCrns rf courseIdent =
     div [] <| Maybe.withDefault []
-        (flip Maybe.map (getCrnsFromCourseIdx rf courseIdx) (\crns ->
-            [ div
-                [ onClick (RenderFilter <| LockSection
-                    <| Array.foldl (\x acc -> if acc > 0 then acc else x) -1 crns)
-                , class <|"button courseButton" ++ " " ++
-                    case rf.previewCourse of
-                        Nothing -> "is-white"
-                        Just courseIdx2 ->
-                            if courseIdx == courseIdx2
-                                then "is-primary"
-                                else "is-white"
-                , title "Preview"
-                ] [ text "🔓" ]
-            , text "Locked In Section #'s"
-            , crnTiles crns
-            ]))
+        <| (getCourseIdx rf.courseList.courses courseIdent
+            |> Maybe.andThen (\courseIdx ->
+                (flip Maybe.map (getLockedCrns rf courseIdx) (\crns ->
+                    [ div
+                        [ onClick (RenderFilter <| LockSection
+                            <| Array.foldl (\x acc -> if acc > 0 then acc else x) -1 crns)
+                        , class <|"button courseButton" ++ " " ++
+                            case rf.previewCourse of
+                                Nothing -> "is-white"
+                                Just courseIdent2 ->
+                                    if courseIdent == courseIdent2
+                                        then "is-primary"
+                                        else "is-white"
+                        , title "Preview"
+                        ] [ text "🔓" ]
+                    , text "Locked In Section #'s"
+                    , crnTiles crns
+                    ])
+                )
+            )
+        )
 
-getCrnsFromCourseIdx rf courseIdx =
+getLockedCrns rf courseIdx =
     Dict.get courseIdx rf.lockedClasses
-        |> Maybe.andThen (\classIdx -> Array.get courseIdx rf.courseList.courses
-            |> Maybe.andThen (\course1 -> Array.get classIdx course1.classes
-                |> Maybe.andThen (\sections -> Just (sections
-                    |> Array.map (\section -> section.crn)))))
+        |> Maybe.andThen (\classIdx ->
+            Array.get courseIdx rf.courseList.courses
+                |> Maybe.andThen (\course1 -> Array.get classIdx course1.classes
+                    |> Maybe.andThen (\sections -> Just (sections
+                        |> Array.map (\section -> section.crn)))))
 
 crnTiles crns =
     div [ class "tile is-ancestor" ]

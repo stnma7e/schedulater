@@ -85,12 +85,11 @@ courseOffToMine sub course sections =
         credits = List.head sections
                 |> Maybe.map (\c -> String.fromInt c.credits)
                 |> Maybe.withDefault "0"
-    in { subject = sub.userFacing
-       , courseNum = course.internal
-       , credits = credits
-       , title = course.userFacing
-       , classes = classes
-       }
+    in { ident = course
+        , subject = sub
+        , credits = credits
+        , classes = classes
+        }
 
 collapseSectionsToClasses : List Class -> List Section -> List Class
 collapseSectionsToClasses classes sections =
