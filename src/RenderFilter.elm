@@ -17,6 +17,7 @@ import Course exposing
     , findCourseIndex
     , applyCombo
     , cmp2Course
+    , getCourseIdx
     )
 import ClassTimes exposing(StartEndTime, timeRangeValid)
 import Combos exposing (Combo)
@@ -29,7 +30,7 @@ type alias CreditFilter =
 type alias RenderFilter =
     { courseList: CourseData
     , originalCombos: Array Combo
-    , lockedClasses: Dict CourseIndex ClassIndex
+    , lockedClasses: Dict CourseIdentCmp ClassIndex
     , mustUseCourses: List CourseIdentCmp
     , previewCourse: Maybe CourseIdentCmp
     , creditFilter: CreditFilter
@@ -96,7 +97,7 @@ update msg rf = case msg of
             |> updateCourses
 
     -- only show schedules that include a certain crn
-    LockSection crn -> case findSection crn rf.courseList of
+    LockSection crn -> case findSection crn rf.courseList.courses of
         Nothing -> rf
         Just (courseIdx, sectionIdx) ->
             let newLocked = rf.lockedClasses
@@ -176,9 +177,12 @@ updateCourses rf =
                         |> Array.filter (filterCreditHours courseList.courses rf.creditFilter)
                     newCombos1 = rf.lockedClasses
                         |> Dict.toList
-                        |> flip List.foldl filteredCombos (\(courseIdx, sectionIdx) combos ->
+                        |> flip List.foldl filteredCombos (\(courseIdent, sectionIdx) combos ->
                             combos |> Array.filter
-                                (\combo -> case Array.get courseIdx combo of
+                                (\combo ->
+                                    let maybeSectionIdx = getCourseIdx courseList.courses courseIdent
+                                            |> Maybe.andThen (\courseIdx -> Array.get courseIdx combo)
+                                    in case maybeSectionIdx of
                                     -- index 0 is reserved for an unused course section
                                     -- so while lockedCourses uses the idicies of the array
                                     -- (starting at 0), this function needs to recognize how

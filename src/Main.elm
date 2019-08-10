@@ -350,35 +350,30 @@ selectedCoursesTiles selectedCourses rf = selectedCourses
 
 selectedCrns rf courseIdent =
     div [] <| Maybe.withDefault []
-        <| (getCourseIdx rf.courseList.courses courseIdent
-            |> Maybe.andThen (\courseIdx ->
-                (flip Maybe.map (getLockedCrns rf courseIdx) (\crns ->
-                    [ div
-                        [ onClick (RenderFilter <| LockSection
-                            <| Array.foldl (\x acc -> if acc > 0 then acc else x) -1 crns)
-                        , class <|"button courseButton" ++ " " ++
-                            case rf.previewCourse of
-                                Nothing -> "is-white"
-                                Just courseIdent2 ->
-                                    if courseIdent == courseIdent2
-                                        then "is-primary"
-                                        else "is-white"
-                        , title "Preview"
-                        ] [ text "🔓" ]
-                    , text "Locked In Section #'s"
-                    , crnTiles crns
-                    ])
-                )
-            )
-        )
+        (flip Maybe.map (getLockedCrns rf courseIdent) (\crns ->
+            [ div
+                [ onClick (RenderFilter <| LockSection
+                    <| Array.foldl (\x acc -> if acc > 0 then acc else x) -1 crns)
+                , class <|"button courseButton" ++ " " ++
+                    case rf.previewCourse of
+                        Nothing -> "is-white"
+                        Just courseIdent2 ->
+                            if courseIdent == courseIdent2
+                                then "is-primary"
+                                else "is-white"
+                , title "Preview"
+                ] [ text "🔓" ]
+            , text "Locked In Section #'s"
+            , crnTiles crns
+            ]))
 
-getLockedCrns rf courseIdx =
-    Dict.get courseIdx rf.lockedClasses
-        |> Maybe.andThen (\classIdx ->
-            Array.get courseIdx rf.courseList.courses
+getLockedCrns rf courseIdent =
+    Dict.get courseIdent rf.lockedClasses
+        |> Maybe.andThen (\classIdx -> getCourseIdx rf.courseList.courses courseIdent
+            |> Maybe.andThen (\courseIdx -> Array.get courseIdx rf.courseList.courses
                 |> Maybe.andThen (\course1 -> Array.get classIdx course1.classes
                     |> Maybe.andThen (\sections -> Just (sections
-                        |> Array.map (\section -> section.crn)))))
+                        |> Array.map (\section -> section.crn))))))
 
 crnTiles crns =
     div [ class "tile is-ancestor" ]

@@ -94,9 +94,9 @@ findCourseIndex course cd = cd.courses
     |> Array.filter isJust
     |> Array.foldl (\courseInfo acc -> courseInfo) Nothing
 
-findSection : Int -> CourseData -> Maybe (CourseIndex, ClassIndex)
-findSection crn cd = cd.courses
-    |> Array.indexedMap (\courseIdx course -> course.classes
+findSection : Int -> Array Course -> Maybe (CourseIdentCmp, ClassIndex)
+findSection crn courses = courses
+    |> Array.map (\course -> course.classes
         |> Array.indexedMap (\sectionIdx sections -> case Array.get 0 sections of
             -- just choose the first section in that course's timeslot
                 (Just section) -> if section.crn == crn
@@ -105,7 +105,7 @@ findSection crn cd = cd.courses
                 Nothing -> Nothing )
         |> Array.filter isJust
         |> Array.foldl (\sectionIdx acc -> sectionIdx) Nothing
-        |> Maybe.map (pair courseIdx)
+        |> Maybe.map (pair <| course2Cmp course)
     )
     |> Array.filter isJust
     |> Array.foldl (\courseInfo acc -> courseInfo) Nothing
