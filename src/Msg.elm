@@ -14,8 +14,6 @@ type Msg
     | CourseSelector CourseSelectorMsg
     | GetSubjects
     | GetScheds
-    | NewSubjects (Result Http.Error (List Subject))
-    | NewScheds (Result Http.Error (CourseData))
     | IncrementSched
     | DecrementSched
     | RenderCurrentSched (Cmd Msg)
