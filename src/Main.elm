@@ -112,13 +112,6 @@ update msg model = case msg of
     Msg.GetSubjects -> model
         |> update (CourseOff CourseOff.GetSubjects)
 
-    Msg.NewSubjects (Ok newSubjects) ->
-        ({ model | subjects = newSubjects}, Cmd.none)
-
-    Msg.NewSubjects (Err e) ->
-        let _ = log "ERROR (NewSubjects)" <| Debug.toString e
-        in (model, Cmd.none)
-
     GetScheds ->
         let newModel = { model | courseChangeState = Pending }
             newScheds = model.courseSelector.courses
@@ -146,18 +139,6 @@ update msg model = case msg of
                     , showModal = (Debug.log "shedCount" currentScheds.courseData.schedCount) <= 0
                     }
                 , Cmd.batch [cmd, renderCurrentSched newModel])
-
-    NewScheds (Ok newScheds) ->
-        let (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds))
-        in ({ newModel
-                | calendar = CalendarData 0
-                , courseChangeState = Received
-                }
-            , Cmd.batch [cmd, renderCurrentSched newModel])
-
-    NewScheds (Err e) ->
-        let _ = log "ERROR (NewScheds)" <| Debug.toString e
-        in (model, Cmd.none)
 
     RenderCurrentSched cmd -> (model, Cmd.batch [cmd, renderCurrentSched model])
 
