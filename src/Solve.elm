@@ -20,7 +20,7 @@ type alias SolverState =
 init : Array Course -> SolverState
 init courses =
     let initialCombo = Array.repeat (Array.length courses) 0
-        maxCombo = log "max" <| Array.map (\c -> Array.length c.classes) courses
+        maxCombo = log "max" <| Array.map (\c -> Array.length c.lectures) courses
         combos = Combos initialCombo maxCombo
     in { combos = combos
         , courseData = CourseData 0 courses (Array.fromList [])
@@ -92,5 +92,5 @@ getComboSections courses combo =
 
 getIthSectionOfCourse : Maybe Course -> ClassIndex -> Maybe Section
 getIthSectionOfCourse c i = c
-    |> andThen (\x -> Array.get (i - 1) x.classes) -- if i == -1, then we return Nothing
+    |> andThen (\x -> Array.get (i - 1) x.lectures) -- if i == -1, then we return Nothing
     |> andThen (Array.get 0)

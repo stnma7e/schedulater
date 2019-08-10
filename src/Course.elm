@@ -31,7 +31,8 @@ type alias Course =
     { ident: CourseIdent
     , subject: SubjectIdent
     , credits: String
-    , classes: Array Class
+    , lectures: Array Class
+    , labs: Array Class
     }
 
 type alias CourseIdent = Ident
@@ -82,7 +83,7 @@ applyCombo : Array Course -> Combo -> Array (Maybe Class)
 applyCombo courses combo = combo
     |> Array.indexedMap (\courseIdx classIdx ->
         Array.get courseIdx courses
-            |> andThen (\course -> Array.get (classIdx - 1) course.classes))
+            |> andThen (\course -> Array.get (classIdx - 1) course.lectures))
 
 findCourseIndex : Course -> CourseData -> Maybe CourseIndex
 findCourseIndex course cd = cd.courses
@@ -96,7 +97,7 @@ findCourseIndex course cd = cd.courses
 
 findSection : Int -> Array Course -> Maybe (CourseIdentCmp, ClassIndex)
 findSection crn courses = courses
-    |> Array.map (\course -> course.classes
+    |> Array.map (\course -> course.lectures
         |> Array.indexedMap (\sectionIdx sections -> case Array.get 0 sections of
             -- just choose the first section in that course's timeslot
                 (Just section) -> if section.crn == crn
@@ -105,8 +106,7 @@ findSection crn courses = courses
                 Nothing -> Nothing )
         |> Array.filter isJust
         |> Array.foldl (\sectionIdx acc -> sectionIdx) Nothing
-        |> Maybe.map (pair <| course2Cmp course)
-    )
+        |> Maybe.map (pair <| course2Cmp course))
     |> Array.filter isJust
     |> Array.foldl (\courseInfo acc -> courseInfo) Nothing
 
@@ -123,7 +123,7 @@ makeSched courses comboIndex =
                     Just c -> c.ident.userFacing
                     Nothing -> ""
                 maybeClass  = maybeCourse
-                    |> andThen (\course -> Array.get (classIndex - 1) course.classes)
+                    |> andThen (\course -> Array.get (classIndex - 1) course.lectures)
                     |> andThen (Array.get 0)
             in Maybe.map (\c -> (courseName, c)) maybeClass
     in Array.indexedMap convertComboToClassList combo

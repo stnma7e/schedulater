@@ -6,6 +6,7 @@ import Array
 import Dict exposing (Dict)
 import Debug exposing (log)
 import Maybe exposing (andThen, withDefault)
+import Tuple exposing (first, second)
 
 import Course exposing (..)
 import ClassTimes exposing (..)
@@ -81,15 +82,26 @@ courseOffToMine sub course sections =
     let classes = sections
                 |> List.map courseOffSectionToSection
                 |> collapseSectionsToClasses []
-                |> Array.fromList
+                |> List.partition isLabSection
         credits = List.head sections
                 |> Maybe.map (\c -> String.fromInt c.credits)
                 |> Maybe.withDefault "0"
     in { ident = course
         , subject = sub
         , credits = credits
-        , classes = classes
-        }
+        , labs = Array.fromList <| first classes
+        , lectures = Array.fromList <| second classes
+       }
+
+isLabSection : Class -> Bool
+isLabSection class = Array.get 0 class
+    |> Maybe.map (\section ->
+        section.daytimes
+            |> List.map (\classTime ->
+                classTime.startEndTime.end - classTime.startEndTime.start
+                > 5 * 30)
+            |> List.foldl (||) False)
+    |> withDefault False
 
 collapseSectionsToClasses : List Class -> List Section -> List Class
 collapseSectionsToClasses classes sections =

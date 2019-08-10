@@ -37,10 +37,10 @@ update msg cs = case msg of
         { cs | selectedSubject = emptyIdent, subjectSearchString = "" }
 
     AddCourse course ->
-            let newCourses = if List.member course cs.courses
-                    then List.filter ((/=) course) cs.courses
-                    else course :: cs.courses
-            in { cs | courses = newCourses }
+        let newCourses = if List.member course cs.courses
+                then List.filter ((/=) course) cs.courses
+                else course :: cs.courses
+        in { cs | courses = newCourses }
 
 view : CourseSelector -> List SubjectIdent -> CourseDict -> Html CourseSelectorMsg
 view cs subjects courses =

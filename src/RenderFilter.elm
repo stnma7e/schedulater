@@ -168,7 +168,7 @@ updateCourses rf =
                         |> Maybe.withDefault -1
                     numSections = previewCourse
                         |> Maybe.map second
-                        |> Maybe.andThen (\course -> Just <| Array.length course.classes)
+                        |> Maybe.andThen (\course -> Just <| Array.length course.lectures)
                         |> Maybe.withDefault 0
                     comboLength = Array.length courseList.courses
                 in List.range 1 numSections

@@ -116,6 +116,7 @@ update msg model = case msg of
         let newModel = { model | courseChangeState = Pending }
             newScheds = model.courseSelector.courses
                     |> Array.fromList
+                    |> Debug.log "starting classes"
                     |> Solve.init
         in model |> update (SchedProgress newScheds)
 
@@ -371,7 +372,7 @@ getLockedCrns rf courseIdent =
     Dict.get courseIdent rf.lockedClasses
         |> Maybe.andThen (\classIdx -> getCourseIdx rf.courseList.courses courseIdent
             |> Maybe.andThen (\courseIdx -> Array.get courseIdx rf.courseList.courses
-                |> Maybe.andThen (\course1 -> Array.get classIdx course1.classes
+                |> Maybe.andThen (\course1 -> Array.get classIdx course1.lectures
                     |> Maybe.andThen (\sections -> Just (sections
                         |> Array.map (\section -> section.crn))))))
 
