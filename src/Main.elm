@@ -116,7 +116,6 @@ update msg model = case msg of
         let newModel = { model | courseChangeState = Pending }
             newScheds = model.courseSelector.courses
                     |> Array.fromList
-                    |> Debug.log "starting classes"
                     |> Solve.init
         in model |> update (SchedProgress newScheds)
 
@@ -194,7 +193,7 @@ view model =
 
 debugInfo model =
     div [] <| List.map text
-        [ Debug.toString <| model.renderFilters.labSections
+        [ -- Debug.toString <| model.renderFilters.labSections
          -- Debug.toString <| model.requestFilters
         -- , Debug.toString <| model.courseSelector
         -- , Debug.toString <| Dict.size model.courseOffData.courses

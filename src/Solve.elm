@@ -19,8 +19,12 @@ type alias SolverState =
 
 init : Array Course -> SolverState
 init courses =
-    let initialCombo = Array.repeat (Array.length courses) 0
-        maxCombo = log "max" <| Array.map (\c -> Array.length c.lectures) courses
+    let initialCombo = Array.repeat (Array.length courses * 2) 0
+        maxCombo = courses
+                |> Array.toList
+                |> List.concatMap (\c -> [Array.length c.lectures, Array.length c.labs])
+                |> Array.fromList
+                |> Debug.log "max"
         combos = Combos initialCombo maxCombo
     in { combos = combos
         , courseData = CourseData 0 courses (Array.fromList [])
