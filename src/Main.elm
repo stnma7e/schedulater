@@ -135,8 +135,10 @@ update msg model = case msg of
                 { model
                 | schedProgress = currentScheds.progress
                 }
-        in if currentScheds.progress == 100
-            then let (newModel1, cmd) = newModel
+        in if currentScheds.progress /= 100
+            then (newModel, Process.sleep 0
+                    |> Task.perform (always <| ContinueScheds currentScheds))
+            else let (newModel1, cmd) = newModel
                         |> update (RenderFilter <| NewCourses currentScheds.courseData)
                 in ({ newModel1
                     | calendar = CalendarData 0
@@ -144,8 +146,6 @@ update msg model = case msg of
                     , showModal = (Debug.log "shedCount" currentScheds.courseData.schedCount) <= 0
                     }
                 , Cmd.batch [cmd, renderCurrentSched newModel])
-            else (newModel, Process.sleep 0
-                    |> Task.perform (always <| ContinueScheds currentScheds))
 
     NewScheds (Ok newScheds) ->
         let (newModel, cmd) = (model |> update (RenderFilter <| NewCourses newScheds))

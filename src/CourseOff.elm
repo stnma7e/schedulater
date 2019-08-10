@@ -10,7 +10,7 @@ import Maybe exposing (andThen, withDefault)
 import Course exposing (..)
 import ClassTimes exposing (..)
 
-courseOffUrl = "https://soc.courseoff.com/gatech/terms/201901/"
+courseOffUrl = "https://soc.courseoff.com/gatech/terms/201908/"
 
 type CourseOffMsg
     = GetSubjects
