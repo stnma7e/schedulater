@@ -32,6 +32,7 @@ type alias RenderFilter =
     , originalCombos: Array Sched
     , courseIndexMap : Dict String CourseIndex
     , lockedClasses: Dict CourseIndex ClassIndex
+    , labSections: Dict CourseIndex ClassIndex
     , mustUseCourses: List CourseIndex
     , previewCourse: Maybe CourseIndex
     , creditFilter: CreditFilter
@@ -43,6 +44,7 @@ defaultRenderFilters =
     , originalCombos = Array.empty
     , courseIndexMap = Dict.empty
     , lockedClasses = Dict.empty
+    , labSections = Dict.empty
     , mustUseCourses = []
     , previewCourse = Nothing
     , creditFilter =
@@ -110,7 +112,11 @@ update msg rf = case msg of
     LockSection crn -> case findSection crn rf.courseList of
         Nothing -> rf
         Just (courseIdx, sectionIdx) ->
-            let newLocked = rf.lockedClasses
+            let addingLabSection = isJust rf.previewCourse
+                lockedList = if addingLabSection
+                        then rf.labSections
+                        else rf.lockedClasses
+                newLocked = lockedList
                     |> Dict.update courseIdx (\currentIdx -> case currentIdx of
                         -- no section is locked in for that course yet: add it
                         Nothing -> Just sectionIdx
@@ -118,7 +124,9 @@ update msg rf = case msg of
                         Just sectionIdx2 -> if sectionIdx == sectionIdx2
                             then Nothing -- if the value is already present, delete it
                             else Just sectionIdx) -- else update to the new one
-            in { rf | lockedClasses = newLocked }
+            in if addingLabSection
+                    then { rf | lockedClasses = newLocked }
+                    else { rf | labSections = newLocked }
                 |> updateCourses
 
     NewMaxHours newMaxHours ->

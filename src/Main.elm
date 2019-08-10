@@ -212,7 +212,7 @@ view model =
 
 debugInfo model =
     div [] <| List.map text
-        [-- Debug.toString <| model.renderFilters
+        [ Debug.toString <| model.renderFilters.labSections
          -- Debug.toString <| model.requestFilters
         -- , Debug.toString <| model.courseSelector
         -- , Debug.toString <| Dict.size model.courseOffData.courses
