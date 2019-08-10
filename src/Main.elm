@@ -13,7 +13,8 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 
 import Msg exposing (Msg(..))
-import Course exposing (Course, Subject, Section, makeSched, decodeCourseData)
+import Common exposing (flip)
+import Course exposing (Course, Subject, Section, makeSched)
 import Solve exposing (SolverState, solveCourses)
 import CourseSelector exposing (CourseSelectorMsg(..), defaultCourseSelector)
 import RenderFilter exposing (RenderFilterMsg(..), defaultRenderFilters, showTime)
@@ -24,8 +25,6 @@ import CourseOff exposing
     , getCourseOffSubjects
     )
 import Modal exposing (modal)
-
-flip f a b = f b a
 
 main = Browser.element
     { init = init

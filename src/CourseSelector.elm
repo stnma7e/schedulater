@@ -3,7 +3,7 @@ module CourseSelector exposing (..)
 import Html exposing (Html, button, div, text, input, table, tr, td, thead, tbody, label, span)
 import Html.Attributes exposing (placeholder, class, id, type_, value, disabled, title)
 import Html.Events exposing (onClick, onInput)
-import Dict exposing (..)
+import Dict exposing (Dict)
 
 import Course exposing (..)
 
@@ -77,7 +77,7 @@ view cs subjects courses =
                 else let selectedSubjectCourses = courses
                             |> Dict.filter (\(subCmp, _) _ ->
                                 cs.selectedSubject == cmp2Ident subCmp)
-                            |> values
+                            |> Dict.values
                     in showSelectedSubjectCourses
                             cs.subjectSearchString
                             selectedSubjectCourses

@@ -6,12 +6,12 @@ import Array exposing (Array)
 import Json.Decode as D exposing (field, index, int, string, array, map2, map3, map5)
 import Maybe exposing (withDefault, andThen)
 
+import Common exposing (isJust)
 import ClassTimes exposing (ClassTimes, getClassTimes)
 import Combos exposing(Combo)
 
 type alias CourseIndex = Int
 type alias ClassIndex = Int
-type alias Sched = Array Int
 
 type alias Subject = String
 
@@ -52,7 +52,7 @@ cmp2Ident (internal, userFacing) = { internal = internal, userFacing = userFacin
 type alias CourseData =
     { schedCount: Int
     , courses: Array Course
-    , combos: Array Sched
+    , combos: Array Combo
     }
 
 type alias CourseTableData =
@@ -97,34 +97,6 @@ findSection crn cd = cd.courses
     |> Array.filter isJust
     |> Array.foldl (\courseInfo acc -> courseInfo) Nothing
 
-decodeCourseData = map3 CourseData
-    (field "sched_count" int)
-    (field "flat_courses" (array decodeCourse))
-    (field "scheds" (array (array int)))
-decodeCourse = map5 Course
-    (field "subject" string)
-    (field "course_num" string)
-    (field "credits" string)
-    (field "title" string)
-    (field "classes" (array (array decodeSection)))
-decodeSection = map5 Section
-    (field "crn" int)
-    (field "cap" int)
-    (field "remaining" int)
-    (field "instructor" string)
-    (field "daytimes" string
-        |> D.andThen parseClassTimes)
-decodeCourseTableData = map3 CourseTableData
-    (index 0 string)
-    (index 1 string)
-    (index 2 string)
-
-parseClassTimes : String -> D.Decoder ClassTimes
-parseClassTimes daytimes =
-    case getClassTimes daytimes of
-        Just ct -> D.succeed ct
-        Nothing -> D.fail ""
-
 makeSched : CourseData -> Int -> List (String, Section)
 makeSched courses comboIndex =
     let combo = case Array.get comboIndex courses.combos of
@@ -144,7 +116,3 @@ makeSched courses comboIndex =
     in Array.indexedMap convertComboToClassList combo
         |> Array.toList
         |> List.filterMap identity
-
-isJust x = case x of
-    Just _  -> True
-    Nothing -> False

@@ -5,22 +5,10 @@ import Http
 import Array exposing (Array)
 import Dict exposing (Dict)
 
-import Course exposing (..)
+import Common exposing (flip, isJust, sequence)
+import Course exposing (CourseData, Course, CourseIndex, ClassIndex, findSection, findCourseIndex, applyCombo)
 import ClassTimes exposing(StartEndTime, timeRangeValid)
 import Combos exposing (Combo)
-
-sequence : List (Maybe a) -> Maybe (List a)
-sequence mss = case mss of
-    [] -> Just []
-    (m::ms) -> m |> Maybe.andThen
-        (\x -> sequence ms |> Maybe.andThen
-            (\xs -> Just (x::xs)))
-
-flip f a b = f b a
-
-isJust x = case x of
-    Nothing -> False
-    Just _ -> True
 
 type alias CreditFilter =
     { min: Int
@@ -29,7 +17,7 @@ type alias CreditFilter =
 
 type alias RenderFilter =
     { courseList: CourseData
-    , originalCombos: Array Sched
+    , originalCombos: Array Combo
     , courseIndexMap : Dict String CourseIndex
     , lockedClasses: Dict CourseIndex ClassIndex
     , mustUseCourses: List CourseIndex

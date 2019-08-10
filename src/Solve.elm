@@ -5,23 +5,11 @@ import Result
 import Maybe exposing (withDefault, andThen)
 import Debug exposing (log)
 
+import Common exposing (flip, sequence, isJust)
 import RenderFilter exposing (..)
 import Course exposing (..)
 import Combos exposing (..)
 import ClassTimes exposing (..)
-
-flip f a b = f b a
-
-sequence : List (Maybe a) -> Maybe (List a)
-sequence mss = case mss of
-    [] -> Just []
-    (m::ms) -> m |> andThen
-        (\x -> sequence ms |> andThen
-            (\xs -> Just (x::xs)))
-
-isJust x = case x of
-    Nothing -> False
-    Just _ -> True
 
 type alias SolverState =
     { combos: Combos
