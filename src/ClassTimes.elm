@@ -33,8 +33,19 @@ checkClassTimesCollide ct1 ct2 = sequence2 ct1 ct2
 checkClassTimeConflict : ClassTime -> ClassTime -> Bool
 checkClassTimeConflict ct1 ct2 = if ((Bitwise.and ct1.days ct2.days) == 0)
     then False
-    else not <| (ct1.startEndTime.end <= ct2.startEndTime.start) -- need to check each day individually
-        || (ct1.startEndTime.start >= ct2.startEndTime.end)
+    else [0,1,2,3,4,5,6]
+        |> List.foldl (\day acc -> acc
+            && if Bitwise.and
+                    (Bitwise.and ct1.days (shiftLeftBy day 1))
+                    (Bitwise.and ct2.days (shiftLeftBy day 1))
+                    == 0
+                then True
+                else timesValid ct1 ct2)
+            True
+
+timesValid ct1 ct2 = not <|
+       (ct1.startEndTime.end <= ct2.startEndTime.start)
+    || (ct1.startEndTime.start >= ct2.startEndTime.end)
 
 timeRangeValid : StartEndTime -> ClassTimes -> Bool
 timeRangeValid set ct = ct

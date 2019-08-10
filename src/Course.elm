@@ -69,7 +69,7 @@ applyCombo : Array Course -> Combo -> Array (Maybe Class)
 applyCombo courses combo = combo
     |> Array.indexedMap (\courseIdx classIdx ->
         Array.get courseIdx courses
-            |> andThen (\course -> Array.get classIdx course.classes))
+            |> andThen (\course -> Array.get (classIdx - 1) course.classes))
 
 findCourseIndex : Course -> CourseData -> Maybe CourseIndex
 findCourseIndex course cd = cd.courses

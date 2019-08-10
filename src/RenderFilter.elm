@@ -18,6 +18,10 @@ sequence mss = case mss of
 
 flip f a b = f b a
 
+isJust x = case x of
+    Nothing -> False
+    Just _ -> True
+
 type alias CreditFilter =
     { min: Int
     , max: Int
@@ -175,14 +179,16 @@ updateCourses rf =
                     newCombos1 = rf.lockedClasses
                         |> Dict.toList
                         |> flip List.foldl filteredCombos (\(courseIdx, sectionIdx) combos ->
-                            combos |> Array.filter (\combo -> case Array.get courseIdx combo of
-                                -- index 0 is reserved for an unused course section
-                                -- so while lockedCourses uses the idicies of the array
-                                -- (starting at 0), this function needs to recognize how
-                                -- combinations are interpreted for rendering
-                                Just sectionIdx2 -> sectionIdx == sectionIdx2 - 1
-                                Nothing -> False
-                            ))
+                            combos |> Array.filter
+                                (\combo -> case Array.get courseIdx combo of
+                                    -- index 0 is reserved for an unused course section
+                                    -- so while lockedCourses uses the idicies of the array
+                                    -- (starting at 0), this function needs to recognize how
+                                    -- combinations are interpreted for rendering
+                                    Just sectionIdx2 -> sectionIdx == sectionIdx2 - 1
+                                    Nothing -> True
+                                )
+                            )
                 in rf.mustUseCourses
                     |> flip List.foldl newCombos1 (\courseIdx combos ->
                         combos |> Array.filter (\combo -> case Array.get courseIdx combo of
@@ -198,7 +204,7 @@ updateCourses rf =
 
 filterTimes : Array Course -> StartEndTime -> Combo -> Bool
 filterTimes courses timeFilter combo =
-    let maybeClasses = sequence <| Array.toList <| applyCombo courses combo
+    let maybeClasses = sequence <| Array.toList <| Array.filter isJust <| applyCombo courses combo
     in case maybeClasses of
         Nothing -> False
         Just classes -> classes

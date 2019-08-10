@@ -34,8 +34,8 @@ update msg data = case msg of
     GetSubjects -> (data, getCourseOffSubjects)
     NewSubjects (Ok newSubjects) ->
         ({ data |  subjects = newSubjects }, Cmd.none)
-    NewSubjects (Err e) ->
-        let _ = log "ERROR [CourseOff NewSubjects]" <| Debug.toString e
+    NewSubjects (Err err) ->
+        let _ = Debug.log "ERROR [CourseOff NewSubjects]" err
         in (data, Cmd.none)
 
     GetSubjectCourses sub -> (data, getSubjectCourses sub)
@@ -43,7 +43,8 @@ update msg data = case msg of
         let courseInfoCmds = List.map (getCourseInfo sub) subCourses
         in (data, Cmd.batch courseInfoCmds)
     NewSubjectCourses sub (Err err) ->
-        Debug.todo ""
+        let x = Debug.log "ERROR [CourseOff NewSubjectCourses]" err
+        in (data, Cmd.none)
 
     NewCourseInfo sub course (Ok courseInfo) ->
         let newCourseInfo = Dict.insert (ident2Cmp sub, ident2Cmp course)
@@ -51,7 +52,7 @@ update msg data = case msg of
                 data.courses
         in ({ data | courses = newCourseInfo }, Cmd.none)
     NewCourseInfo sub courseNum (Err err) ->
-        let x = Debug.log "" err
+        let x = Debug.log "ERROR [CourseOff NewCourseInfo]" err
         in (data, Cmd.none)
 
 getCourseOffSubjects : Cmd CourseOffMsg
