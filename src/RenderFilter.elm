@@ -168,7 +168,8 @@ updateCourses rf =
                         |> Maybe.withDefault -1
                     numSections = previewCourse
                         |> Maybe.map second
-                        |> Maybe.andThen (\course -> Just <| Array.length course.lectures)
+                        |> Maybe.map (\course -> Array.length course.lectures
+                            + Array.length course.labs)
                         |> Maybe.withDefault 0
                     comboLength = Array.length courseList.courses
                 in List.range 1 numSections
@@ -216,7 +217,11 @@ updateCourses rf =
 
 filterTimes : Array Course -> StartEndTime -> Combo -> Bool
 filterTimes courses timeFilter combo =
-    let maybeClasses = sequence <| Array.toList <| Array.filter isJust <| applyCombo courses combo
+    let maybeClasses = applyCombo courses combo
+            |> Array.filter isJust
+            |> Array.toList
+            |> sequence
+            |> Maybe.map (List.map second)
     in case maybeClasses of
         Nothing -> False
         Just classes -> classes

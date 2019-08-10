@@ -79,11 +79,18 @@ extractCourses : SubjectIdent -> CourseData -> Array Course
 extractCourses sub cd = cd.courses
     |> Array.filter (\c -> String.toUpper c.subject.internal == String.toUpper sub.internal)
 
-applyCombo : Array Course -> Combo -> Array (Maybe Class)
+applyCombo : Array Course -> Combo -> Array (Maybe (Course, Class))
 applyCombo courses combo = combo
     |> Array.indexedMap (\courseIdx classIdx ->
         Array.get courseIdx courses
-            |> andThen (\course -> Array.get (classIdx - 1) course.lectures))
+            |> andThen (\course ->
+                case Array.get (classIdx - 1) course.lectures of
+                    Just class -> Just (course, class) -- if this class is a lecture
+                    Nothing -> -- if this class is a lab, we need to subtract out the lecture indicies
+                        Array.get (classIdx - 1 - Array.length course.lectures) course.labs
+                            |> Maybe.map (\class -> (course, class))
+                ))
+
 
 findCourseIndex : Course -> CourseData -> Maybe CourseIndex
 findCourseIndex course cd = cd.courses
@@ -126,6 +133,7 @@ makeSched courses comboIndex =
                     |> andThen (\course -> Array.get (classIndex - 1) course.lectures)
                     |> andThen (Array.get 0)
             in Maybe.map (\c -> (courseName, c)) maybeClass
-    in Array.indexedMap convertComboToClassList combo
+    in applyCombo courses.courses combo
         |> Array.toList
-        |> List.filterMap identity
+        |> List.filterMap (Maybe.andThen (\(course, class) -> Array.get 0 class
+            |> Maybe.map (\section -> (course.ident.userFacing, section))))
