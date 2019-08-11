@@ -4,12 +4,13 @@ import Array exposing (Array)
 import Result
 import Maybe exposing (withDefault, andThen)
 import Debug exposing (log)
+import Tuple exposing (second)
 
 import Common exposing (flip, sequence, isJust)
 import RenderFilter exposing (..)
-import Course exposing (..)
+import Course exposing (CourseData, Course, Section, applyCombo)
 import Combos exposing (..)
-import ClassTimes exposing (..)
+import ClassTimes exposing (hasTimeConflicts)
 
 type alias SolverState =
     { combos: Combos
@@ -19,10 +20,10 @@ type alias SolverState =
 
 init : Array Course -> SolverState
 init courses =
-    let initialCombo = Array.repeat (Array.length courses * 2) 0
+    let initialCombo = Array.repeat (Array.length courses) 0
         maxCombo = courses
                 |> Array.toList
-                |> List.concatMap (\c -> [Array.length c.lectures, Array.length c.labs])
+                |> List.concatMap (\c -> [Array.length c.lectures])
                 |> Array.fromList
                 |> Debug.log "max"
         combos = Combos initialCombo maxCombo
@@ -50,7 +51,7 @@ solveCourses state =
                 let newState =
                         { state
                         | combos = nextCombos
-                        , courseData = if filterCombo courses nextCombos.current
+                        , courseData = if comboValid courses nextCombos.current
                             then
                                 { courseData
                                 | combos = Array.push nextCombos.current valid
@@ -64,37 +65,22 @@ solveCourses state =
                         }
                     else solveCourses newState
 
-filterCombo : Array Course -> Combo -> Bool
-filterCombo courses combo =
-    let sections = getComboSections courses combo
-                |> List.filter isJust
-                |> sequence
-                |> withDefault []
-        noTimeCollision = not <| checkTimesCollide sections
-    in noTimeCollision
+comboValid : Array Course -> Combo -> Bool
+comboValid courses combo =
+    let sections = applyCombo courses combo
+            |> Array.filter isJust
+            |> Array.toList
+            |> sequence |> Maybe.withDefault []
+            |> List.map (\x -> second x |> Array.get 0)
+            |> sequence |> Maybe.withDefault []
+    in not <| List.isEmpty sections || doTimesCollide sections
 
 -- returns true if times collide
-checkTimesCollide : List Section -> Bool
-checkTimesCollide sections = case sections of
+doTimesCollide : List Section -> Bool
+doTimesCollide sections = case sections of
     [] -> False
     (section :: sx) ->
         let allClassTimes = List.map (\s -> s.daytimes) sx
-        in checkTimeConflicts section.daytimes allClassTimes
-            || checkTimesCollide sx
-
-checkTimeConflicts : ClassTimes -> List ClassTimes -> Bool
-checkTimeConflicts ct1 cts = cts
-    |> List.map (\ct2 -> checkClassTimesCollide ct1 ct2)
-    |> List.foldl (||) (False)
-
-getComboSections : Array Course -> Combo -> List (Maybe Section)
-getComboSections courses combo =
-    let comboSections = flip Array.indexedMap combo
-            (\courseIdx sectionIdx -> let course = Array.get courseIdx courses
-                in getIthSectionOfCourse course sectionIdx)
-    in Array.toList comboSections
-
-getIthSectionOfCourse : Maybe Course -> ClassIndex -> Maybe Section
-getIthSectionOfCourse c i = c
-    |> andThen (\x -> Array.get (i - 1) x.lectures) -- if i == -1, then we return Nothing
-    |> andThen (Array.get 0)
+        in List.isEmpty section.daytimes
+            || hasTimeConflicts section.daytimes allClassTimes
+            || doTimesCollide sx

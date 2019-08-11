@@ -7,7 +7,7 @@ import Json.Decode as D exposing (field, index, int, string, array, map2, map3, 
 import Maybe exposing (withDefault, andThen)
 import Tuple exposing (first)
 
-import Common exposing (isJust)
+import Common exposing (isJust, flip)
 import ClassTimes exposing (ClassTimes, getClassTimes)
 import Combos exposing(Combo)
 
@@ -85,12 +85,11 @@ applyCombo courses combo = combo
         Array.get courseIdx courses
             |> andThen (\course ->
                 case Array.get (classIdx - 1) course.lectures of
-                    Just class -> Just (course, class) -- if this class is a lecture
+                    Just lecture -> Just (course, lecture) -- if this class is a lecture
                     Nothing -> -- if this class is a lab, we need to subtract out the lecture indicies
                         Array.get (classIdx - 1 - Array.length course.lectures) course.labs
-                            |> Maybe.map (\class -> (course, class))
+                            |> Maybe.map (\lab -> (course, lab))
                 ))
-
 
 findCourseIndex : Course -> CourseData -> Maybe CourseIndex
 findCourseIndex course cd = cd.courses

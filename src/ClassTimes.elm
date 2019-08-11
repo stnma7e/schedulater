@@ -21,31 +21,32 @@ type alias StartEndTime =
 type alias Days = Int
 
 sequence2 : List a -> List a -> List (a, a)
-sequence2 a b = List.map (\a1 -> List.map (\b1 -> (a1, b1)) b) a
-    |> List.foldl (++) []
+sequence2 a b = List.concatMap (\a1 -> List.map (\b1 -> (a1, b1)) b) a
 
-checkClassTimesCollide : ClassTimes -> ClassTimes -> Bool
-checkClassTimesCollide ct1 ct2 = sequence2 ct1 ct2
-    |> List.map (\(ct11, ct22) -> checkClassTimeConflict ct11 ct22)
+hasTimeConflicts : ClassTimes -> List ClassTimes -> Bool
+hasTimeConflicts ct1 cts = cts
+    |> List.map (\ct2 -> doClassTimesCollide ct1 ct2)
+    |> List.foldl (||) (False)
+
+doClassTimesCollide : ClassTimes -> ClassTimes -> Bool
+doClassTimesCollide ct1 ct2 = sequence2 ct1 ct2
+    |> List.map (\(ct11, ct22) -> hasClassTimeConflict ct11 ct22)
     |> List.foldl (||) False
 
 -- returns true if conflict
-checkClassTimeConflict : ClassTime -> ClassTime -> Bool
-checkClassTimeConflict ct1 ct2 = if ((Bitwise.and ct1.days ct2.days) == 0)
-    then False
-    else [0,1,2,3,4,5,6]
-        |> List.foldl (\day acc -> acc
-            && if Bitwise.and
+hasClassTimeConflict : ClassTime -> ClassTime -> Bool
+hasClassTimeConflict ct1 ct2 =
+    [0,1,2,3,4,5,6]
+        |> List.map (\day ->
+            if Bitwise.and
                     (Bitwise.and ct1.days (shiftLeftBy day 1))
                     (Bitwise.and ct2.days (shiftLeftBy day 1))
                     == 0
-                then True
-                else timesValid ct1 ct2)
-            True
+                then False
+                else not <| timesValid ct1.startEndTime ct2.startEndTime)
+        |> List.foldl (||) False
 
-timesValid ct1 ct2 = not <|
-       (ct1.startEndTime.end <= ct2.startEndTime.start)
-    || (ct1.startEndTime.start >= ct2.startEndTime.end)
+timesValid set1 set2 = (set1.end < set2.start) || (set1.start > set2.end)
 
 timeRangeValid : StartEndTime -> ClassTimes -> Bool
 timeRangeValid set ct = ct
