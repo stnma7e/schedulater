@@ -8,7 +8,7 @@ import Tuple exposing (second)
 
 import Common exposing (flip, sequence, isJust)
 import RenderFilter exposing (..)
-import Course exposing (CourseData, Course, Section, applyCombo)
+import Course exposing (CourseData, Course, Section, ClassCombo(..), applyCombo)
 import Combos exposing (..)
 import ClassTimes exposing (hasTimeConflicts)
 
@@ -67,12 +67,13 @@ solveCourses state =
 
 comboValid : Array Course -> Combo -> Bool
 comboValid courses combo =
-    let sections = applyCombo courses combo
+    let lectureSections = applyCombo courses (Lecture combo)
             |> Array.filter isJust
             |> Array.toList
             |> sequence |> Maybe.withDefault []
             |> List.map (\x -> second x |> Array.get 0)
             |> sequence |> Maybe.withDefault []
+        sections = lectureSections
     in not <| List.isEmpty sections || doTimesCollide sections
 
 -- returns true if times collide

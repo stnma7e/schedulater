@@ -13,6 +13,7 @@ import Course exposing
     , CourseIndex
     , ClassIndex
     , CourseIdentCmp
+    , ClassCombo(..)
     , findSection
     , findCourseIndex
     , applyCombo
@@ -217,7 +218,7 @@ updateCourses rf =
 
 filterTimes : Array Course -> StartEndTime -> Combo -> Bool
 filterTimes courses timeFilter combo =
-    let maybeClasses = applyCombo courses combo
+    let maybeClasses = applyCombo courses (Lecture combo)
             |> Array.filter isJust
             |> Array.toList
             |> sequence

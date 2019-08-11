@@ -46,6 +46,15 @@ type alias CourseIdentCmp = (IdentCmp, IdentCmp)
 
 type alias CourseDict = Dict CourseIdentCmp Course
 
+type ClassCombo
+    = Lecture Combo
+    | Lab Combo
+
+getCombo : ClassCombo -> Combo
+getCombo c = case c of
+    Lecture c1 -> c1
+    Lab c1 -> c1
+
 emptyIdent = { internal = "", userFacing = "" }
 fakeIdent = Debug.todo ""
 ident2Cmp ident = (ident.internal, ident.userFacing)
@@ -79,16 +88,17 @@ extractCourses : SubjectIdent -> CourseData -> Array Course
 extractCourses sub cd = cd.courses
     |> Array.filter (\c -> String.toUpper c.subject.internal == String.toUpper sub.internal)
 
-applyCombo : Array Course -> Combo -> Array (Maybe (Course, Class))
-applyCombo courses combo = combo
+applyCombo : Array Course -> ClassCombo -> Array (Maybe (Course, Class))
+applyCombo courses combo = getCombo combo
     |> Array.indexedMap (\courseIdx classIdx ->
         Array.get courseIdx courses
             |> andThen (\course ->
-                case Array.get (classIdx - 1) course.lectures of
+                let classes = case combo of
+                        Lecture _ -> course.lectures
+                        Lab _ -> course.labs
+                in case Array.get (classIdx - 1) classes of
                     Just lecture -> Just (course, lecture) -- if this class is a lecture
-                    Nothing -> -- if this class is a lab, we need to subtract out the lecture indicies
-                        Array.get (classIdx - 1 - Array.length course.lectures) course.labs
-                            |> Maybe.map (\lab -> (course, lab))
+                    Nothing -> Nothing
                 ))
 
 findCourseIndex : Course -> CourseData -> Maybe CourseIndex
@@ -132,7 +142,7 @@ makeSched courses comboIndex =
                     |> andThen (\course -> Array.get (classIndex - 1) course.lectures)
                     |> andThen (Array.get 0)
             in Maybe.map (\c -> (courseName, c)) maybeClass
-    in applyCombo courses.courses combo
+    in applyCombo courses.courses (Lecture combo)
         |> Array.toList
         |> List.filterMap (Maybe.andThen (\(course, class) -> Array.get 0 class
             |> Maybe.map (\section -> (course.ident.userFacing, section))))
