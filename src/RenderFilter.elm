@@ -34,7 +34,7 @@ defaultRenderFilters =
     , mustUseCourses = []
     , previewCourse = Nothing
     , creditFilter =
-        { min = 12
+        { min = 1
         , max = 15
         }
     , timeFilter =
