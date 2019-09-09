@@ -2,7 +2,7 @@ port module Main exposing (main)
 
 import Debug exposing (log)
 import Html exposing (Html, button, div, text, input, table, tr, td, thead, tbody, label, span, progress, p)
-import Html.Attributes as HA exposing (placeholder, class, id, type_, value, disabled, title)
+import Html.Attributes as HA exposing (placeholder, class, id, type_, value, disabled, title, style)
 import Html.Events exposing (onClick, onInput)
 import Browser
 import Process
@@ -288,6 +288,11 @@ filters model =
 
 courseSelector model =
     [ div
+        [ class "box" ]
+        [ p [] [text "Choose a subject and some courses you want to take in the future."]
+        , p [ style "text-align" "center" ] [text "↓"]
+        ]
+    , div
         [ onClick ShowCourseSelector
         , class <|"button is-primary schedButton" ++ " " ++
             if not model.addCourse
